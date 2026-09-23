@@ -69,4 +69,4 @@ Milestone 1 blocks everything; 2→3 ordered by data flow; 4–6 sequential UI s
 
 ## Explicit non-goals
 
-No Android. No native iPad support (opt-in only). No cross-platform frameworks. No accounts/cloud/sync. No crowd data or OCR. No ML. No win/loss scores. No medical/wellness claims. No `tablet-friendly` topic or iPad acceptance criteria anywhere in this repo.
+No Android. No native iPad support (opt-in only). No cross-platform or hybrid frameworks — no Flutter, React Native, Expo, Kotlin Multiplatform, .NET MAUI, Unity, or equivalents. No accounts/cloud/sync. No crowd data or OCR. No ML. No win/loss scores. No medical/wellness claims. No `tablet-friendly` topic or iPad acceptance criteria anywhere in this repo.
