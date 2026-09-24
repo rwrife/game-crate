@@ -74,15 +74,24 @@ The dual-screen experience is a documented design target, **not** a current depe
 
 ## Current status & milestones
 
-Documentation + backlog scaffold only. No Xcode project, build, test suite, device result, or TestFlight binary exists yet.
+Native skeleton landed (issue #1): `GameCrate.xcodeproj` (app + UI-test targets,
+bundle id `com.infinityball.gamecrate`, `TARGETED_DEVICE_FAMILY = 1` in every
+configuration), pure Swift 6 `Packages/CrateKit`, launch XCUITest smoke, and
+CI that measures the exact pinned toolchain, enforces iPhone-only pre-build grep
++ post-build `UIDeviceFamily == [1]`, runs a zero-network empty-allowlist gate,
+and runs the package tests on Linux. See `docs/bootstrap-evidence.md` for what
+is host-verified vs CI-authoritative. **No device, archive, or TestFlight
+evidence exists yet.** Remaining backlog:
 
-1. Milestone 1 — skeleton + CI (iPhone-only gates, zero-network audit).
-2. Milestone 2 — CrateKit domain (shelf, ledger, fit engine) + GRDB store.
-3. Milestone 3 — core UI (wall, shortlist, play log).
-4. Milestone 4 — profiles/analytics + backup/export.
-5. Milestone 5 — TestFlight with real build/signing evidence.
+1. CrateKit domain (shelf, ledger, fit engine, unknown-safe semantics)
+2. GRDB store (`Packages/CrateStore`) + schema v1 + repositories
+3. Shelf + people management UI
+4. Play logging, crate wall, tonight's shortlist UI (incl. `CrateWorkspaceLayout` seam)
+5. Player profiles + shelf analytics at the UI edge
+6. Backup/restore/CSV export + privacy controls
+7. TestFlight/release packaging with real evidence gates
 
-## Development quickstart (future, once skeleton lands)
+## Development quickstart
 
 - Native Swift + SwiftUI only. **No Flutter, React Native, Expo, Kotlin Multiplatform, .NET MAUI, Unity, or any cross-platform/hybrid framework.**
 - iPhone-only iOS app; no Android target and no native iPad support (user opt-in required for either).
