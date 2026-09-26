@@ -80,10 +80,21 @@ configuration), pure Swift 6 `Packages/CrateKit`, launch XCUITest smoke, and
 CI that measures the exact pinned toolchain, enforces iPhone-only pre-build grep
 + post-build `UIDeviceFamily == [1]`, runs a zero-network empty-allowlist gate,
 and runs the package tests on Linux. See `docs/bootstrap-evidence.md` for what
-is host-verified vs CI-authoritative. **No device, archive, or TestFlight
+is host-verified vs CI-authoritative.
+
+Domain layer landed (issue #2, milestone M1): `Packages/CrateKit` now ships the
+shelf/people models (unknown-safe range/time fields), integer 1–5 ratings, the
+append-only play ledger (corrections are compensating events, never rewrites),
+the explainable fit engine (ranked shortlist + named exclusion reasons +
+distinct `unspecified` count for unknown fields), and count-based derivations
+(plays-per-game, DST-safe days-since-last, per-player rating/category counts,
+shelf coverage holes). Deterministic ranking: longest-since-last-play first
+(never-played/undated first), then integer cross-multiplied average rating,
+then title. All verified by 23 swift-testing cases on Linux `swift:6.2` CI
+(see `docs/domain-evidence.md`). **No device, archive, or TestFlight
 evidence exists yet.** Remaining backlog:
 
-1. CrateKit domain (shelf, ledger, fit engine, unknown-safe semantics)
+1. ~~CrateKit domain (shelf, ledger, fit engine, unknown-safe semantics)~~ ✅
 2. GRDB store (`Packages/CrateStore`) + schema v1 + repositories
 3. Shelf + people management UI
 4. Play logging, crate wall, tonight's shortlist UI (incl. `CrateWorkspaceLayout` seam)
