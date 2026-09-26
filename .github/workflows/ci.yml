@@ -24,6 +24,8 @@ jobs:
         run: swift --version
       - name: Run package tests
         run: swift test --package-path Packages/CrateKit
+      - name: CrateKit purity gate (no UIKit/GRDB)
+        run: bash scripts/check_cratekit_purity.sh
       - name: Zero-network gate
         run: bash scripts/check_zero_network.sh
       - name: Gitignore keeps signing material out

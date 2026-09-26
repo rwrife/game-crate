@@ -8,9 +8,9 @@ struct CrateKitTests {
         #expect(CrateKit.domain == "CrateKit")
     }
 
-    @Test("milestone marker is set for M0")
+    @Test("milestone marker is set for M1")
     func milestoneMarker() {
-        #expect(CrateKit.milestone == "M0-skeleton")
+        #expect(CrateKit.milestone == "M1-domain")
     }
 
     @Test("skeleton exposes no stored state beyond constants")

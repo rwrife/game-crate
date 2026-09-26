@@ -54,6 +54,9 @@ python3 -m unittest discover -s Scripts/tests -v 2>&1 | tee "$artifact_dir/helpe
 phase="zero_network_gate"
 bash scripts/check_zero_network.sh 2>&1 | tee "$artifact_dir/zero-network-gate.log"
 
+phase="cratekit_purity_gate"
+bash scripts/check_cratekit_purity.sh 2>&1 | tee "$artifact_dir/cratekit-purity-gate.log"
+
 phase="signing_material_gitignore_check"
 # Secret material (ASC_KEY_P8 etc.) must never be committable.
 for f in fake.p8 fake.p12 fake.mobileprovision fake.cer; do
