@@ -10,6 +10,7 @@
 		A10000000000000000000102 /* BootstrapHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000202 /* BootstrapHomeView.swift */; };
 		A10000000000000000000103 /* GameCrateLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000203 /* GameCrateLaunchTests.swift */; };
 		A10000000000000000000104 /* CrateKit in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000801 /* CrateKit */; };
+		A10000000000000000000105 /* CrateStore in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000803 /* CrateStore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -34,7 +35,7 @@
 		A10000000000000000000401 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
-			files = (A10000000000000000000104 /* CrateKit in Frameworks */,);
+			files = (A10000000000000000000104 /* CrateKit in Frameworks */, A10000000000000000000105 /* CrateStore in Frameworks */,);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		A10000000000000000000402 /* Frameworks */ = {
@@ -93,7 +94,7 @@
 			buildRules = ();
 			dependencies = ();
 			name = GameCrate;
-			packageProductDependencies = (A10000000000000000000801 /* CrateKit */,);
+			packageProductDependencies = (A10000000000000000000801 /* CrateKit */, A10000000000000000000803 /* CrateStore */,);
 			productName = GameCrate;
 			productReference = A10000000000000000000204 /* GameCrate.app */;
 			productType = "com.apple.product-type.application";
@@ -134,7 +135,7 @@
 			knownRegions = (en, Base,);
 			mainGroup = A10000000000000000000500;
 			minimizedProjectReferenceProxies = 1;
-			packageReferences = (A10000000000000000000800 /* XCLocalSwiftPackageReference "Packages/CrateKit" */,);
+			packageReferences = (A10000000000000000000800 /* XCLocalSwiftPackageReference "Packages/CrateKit" */, A10000000000000000000802 /* XCLocalSwiftPackageReference "Packages/CrateStore" */,);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A10000000000000000000503 /* Products */;
 			projectDirPath = "";
@@ -258,10 +259,12 @@
 
 /* Begin XCLocalSwiftPackageReference section */
 		A10000000000000000000800 /* XCLocalSwiftPackageReference "Packages/CrateKit" */ = {isa = XCLocalSwiftPackageReference; relativePath = Packages/CrateKit;};
+		A10000000000000000000802 /* XCLocalSwiftPackageReference "Packages/CrateStore" */ = {isa = XCLocalSwiftPackageReference; relativePath = Packages/CrateStore;};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		A10000000000000000000801 /* CrateKit */ = {isa = XCSwiftPackageProductDependency; productName = CrateKit;};
+		A10000000000000000000803 /* CrateStore */ = {isa = XCSwiftPackageProductDependency; productName = CrateStore;};
 /* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A10000000000000000000000 /* Project object */;

@@ -95,12 +95,24 @@ then title. All verified by 23 swift-testing cases on Linux `swift:6.2` CI
 evidence exists yet.** Remaining backlog:
 
 1. ~~CrateKit domain (shelf, ledger, fit engine, unknown-safe semantics)~~ ✅
-2. GRDB store (`Packages/CrateStore`) + schema v1 + repositories
+2. ~~GRDB store (`Packages/CrateStore`) + schema v1 + repositories~~ ✅
 3. Shelf + people management UI
 4. Play logging, crate wall, tonight's shortlist UI (incl. `CrateWorkspaceLayout` seam)
 5. Player profiles + shelf analytics at the UI edge
 6. Backup/restore/CSV export + privacy controls
 7. TestFlight/release packaging with real evidence gates
+
+Store layer landed (issue #3, milestone M2): `Packages/CrateStore` pins GRDB.swift
+exactly to 7.11.1 and ships the frozen v1 SQLite schema (`games`, `people`,
+`plays`, `play_players`), a versioned `DatabaseMigrator`, the committed
+`v1.sqlite` fixture and its deterministic regeneration tool, GRDB repository
+implementations, and in-memory fakes in `CrateStoreTestSupport`. Play events
+and participant ratings are inserted atomically; corrections append a new
+event, and v1 triggers reject in-place play/rating updates and direct
+deletes of ledger rows (deleting a game or person still cascades correctly).
+The app project links the local store package. Linux and macOS CI run its
+package tests; Linux installs `libsqlite3-dev`. See `docs/store-evidence.md`
+for host results and platform limitations.
 
 ## Development quickstart
 
