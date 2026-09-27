@@ -113,6 +113,11 @@ xcrun swift test \
   --package-path Packages/CrateKit \
   2>&1 | tee "$artifact_dir/domain-tests.log"
 
+phase="store_tests"
+xcrun swift test \
+  --package-path Packages/CrateStore \
+  2>&1 | tee "$artifact_dir/store-tests.log"
+
 phase="app_build"
 xcodebuild build \
   -project GameCrate.xcodeproj \
