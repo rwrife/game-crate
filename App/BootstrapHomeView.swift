@@ -223,12 +223,23 @@ private struct ShelfView: View {
         NavigationStack {
             List {
                 if model.games.isEmpty {
-                    ContentUnavailableView(
-                        "No games yet",
-                        systemImage: "shippingbox",
-                        description: Text("Add your first game to build tonight's shortlist.")
-                    )
+                    VStack(spacing: 12) {
+                        Image(systemName: "shippingbox")
+                            .font(.system(size: 44))
+                            .foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
+                        Text("No games yet")
+                            .font(.headline)
+                        Text("Add your first game to build tonight's shortlist.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 24)
+                    .accessibilityElement(children: .combine)
                     .accessibilityIdentifier("shelf.empty")
+                    .accessibilityLabel("No games yet. Add your first game to build tonight's shortlist.")
                 } else {
                     ForEach(model.games) { game in
                         NavigationLink {
@@ -654,12 +665,23 @@ private struct PeopleRosterView: View {
         NavigationStack {
             List {
                 if model.people.isEmpty {
-                    ContentUnavailableView(
-                        "No people yet",
-                        systemImage: "person.2",
-                        description: Text("Add people as local names only. Contacts are never requested.")
-                    )
+                    VStack(spacing: 12) {
+                        Image(systemName: "person.2")
+                            .font(.system(size: 44))
+                            .foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
+                        Text("No people yet")
+                            .font(.headline)
+                        Text("Add people as local names only. Contacts are never requested.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 24)
+                    .accessibilityElement(children: .combine)
                     .accessibilityIdentifier("people.empty")
+                    .accessibilityLabel("No people yet. Add people as local names only. Contacts are never requested.")
                 } else {
                     ForEach(model.people) { person in
                         Button {

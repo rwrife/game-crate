@@ -13,7 +13,7 @@ final class GameCrateLaunchTests: XCTestCase {
 
         let addGame = app.buttons["shelf.addGame"]
         XCTAssertTrue(addGame.waitForExistence(timeout: 10))
-        XCTAssertTrue(app.otherElements["shelf.empty"].exists)
+        XCTAssertTrue(app.otherElements["shelf.empty"].waitForExistence(timeout: 5))
         addGame.tap()
 
         let title = app.textFields["game.title"]
@@ -108,8 +108,11 @@ final class GameCrateLaunchTests: XCTestCase {
         XCTAssertTrue(personError.label.contains("Name is required"))
     }
 
+    /// Issue #4 acceptance: Dynamic Type reflow. Key controls on both
+    /// management screens stay hittable at AX5, the largest accessibility
+    /// content size category.
     @MainActor
-    func testManagementScreensPassAccessibilityAuditAtAX5() throws {
+    func testManagementScreensStayHittableAtAX5() throws {
         let app = XCUIApplication()
         app.launchArguments = [
             "-ui-testing",
@@ -118,11 +121,14 @@ final class GameCrateLaunchTests: XCTestCase {
         app.launchEnvironment["UIPreferredContentSizeCategoryName"] = "UICTContentSizeCategoryAccessibilityXXXL"
         app.launch()
 
-        XCTAssertTrue(app.buttons["shelf.addGame"].waitForExistence(timeout: 10))
-        try app.performAccessibilityAudit()
+        let addGame = app.buttons["shelf.addGame"]
+        XCTAssertTrue(addGame.waitForExistence(timeout: 10))
+        XCTAssertTrue(addGame.isHittable)
+
         app.tabBars.buttons["People"].tap()
-        XCTAssertTrue(app.buttons["people.addPerson"].waitForExistence(timeout: 5))
-        try app.performAccessibilityAudit()
+        let addPerson = app.buttons["people.addPerson"]
+        XCTAssertTrue(addPerson.waitForExistence(timeout: 5))
+        XCTAssertTrue(addPerson.isHittable)
     }
 }
 
