@@ -13,7 +13,7 @@ final class GameCrateLaunchTests: XCTestCase {
 
         let addGame = app.buttons["shelf.addGame"]
         XCTAssertTrue(addGame.waitForExistence(timeout: 10))
-        XCTAssertTrue(app.otherElements["shelf.empty"].waitForExistence(timeout: 5))
+        XCTAssertTrue(element(app, identifier: "shelf.empty").waitForExistence(timeout: 5))
         addGame.tap()
 
         let title = app.textFields["game.title"]
@@ -51,7 +51,7 @@ final class GameCrateLaunchTests: XCTestCase {
         XCTAssertTrue(destructive.waitForExistence(timeout: 5))
         destructive.tap()
 
-        XCTAssertTrue(app.otherElements["shelf.empty"].waitForExistence(timeout: 5))
+        XCTAssertTrue(element(app, identifier: "shelf.empty").waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["game.card.Seeded Game"].exists)
     }
 
@@ -62,7 +62,7 @@ final class GameCrateLaunchTests: XCTestCase {
         app.launch()
 
         app.tabBars.buttons["People"].tap()
-        XCTAssertTrue(app.otherElements["people.empty"].waitForExistence(timeout: 5))
+        XCTAssertTrue(element(app, identifier: "people.empty").waitForExistence(timeout: 5))
         app.buttons["people.addPerson"].tap()
 
         let name = app.textFields["person.name"]
@@ -84,7 +84,7 @@ final class GameCrateLaunchTests: XCTestCase {
         editedRow.tap()
         app.buttons["person.delete"].tap()
         app.buttons["Delete Local Person"].tap()
-        XCTAssertTrue(app.otherElements["people.empty"].waitForExistence(timeout: 5))
+        XCTAssertTrue(element(app, identifier: "people.empty").waitForExistence(timeout: 5))
     }
 
     @MainActor
@@ -95,7 +95,7 @@ final class GameCrateLaunchTests: XCTestCase {
 
         app.buttons["shelf.addGame"].tap()
         app.buttons["game.save"].tap()
-        let gameError = app.staticTexts["game.error"]
+        let gameError = element(app, identifier: "game.error")
         XCTAssertTrue(gameError.waitForExistence(timeout: 5))
         XCTAssertTrue(gameError.label.contains("Title is required"))
         app.buttons["game.cancel"].tap()
@@ -103,7 +103,7 @@ final class GameCrateLaunchTests: XCTestCase {
         app.tabBars.buttons["People"].tap()
         app.buttons["people.addPerson"].tap()
         app.buttons["person.save"].tap()
-        let personError = app.staticTexts["person.error"]
+        let personError = element(app, identifier: "person.error")
         XCTAssertTrue(personError.waitForExistence(timeout: 5))
         XCTAssertTrue(personError.label.contains("Name is required"))
     }
@@ -130,6 +130,15 @@ final class GameCrateLaunchTests: XCTestCase {
         XCTAssertTrue(addPerson.waitForExistence(timeout: 5))
         XCTAssertTrue(addPerson.isHittable)
     }
+}
+
+/// Exact-identifier lookup that does not depend on the surfaced
+/// accessibility element type (a List-wrapped empty state can surface as
+/// `Other`, `Cell`, or `StaticText` depending on iOS version).
+private func element(_ app: XCUIApplication, identifier: String) -> XCUIElement {
+    app.descendants(matching: .any)
+        .matching(NSPredicate(format: "identifier == %@", identifier))
+        .firstMatch
 }
 
 private extension XCUIElement {
