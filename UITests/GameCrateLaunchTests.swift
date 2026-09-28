@@ -6,13 +6,137 @@ final class GameCrateLaunchTests: XCTestCase {
     }
 
     @MainActor
-    func testBootstrapHomeLaunches() throws {
+    func testAddGameRendersEnteredAndUnknownFields() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-ui-testing"]
         app.launch()
 
-        XCTAssertTrue(app.otherElements["bootstrap.home"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.staticTexts["Game Crate"].exists)
-        XCTAssertTrue(app.staticTexts["Shelf, play ledger, and tonight's shortlist arrive in the next milestones."].exists)
+        let addGame = app.buttons["shelf.addGame"]
+        XCTAssertTrue(addGame.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.otherElements["shelf.empty"].exists)
+        addGame.tap()
+
+        let title = app.textFields["game.title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+        title.tap()
+        title.typeText("Sky Team")
+
+        let categories = app.textFields["game.categories"]
+        categories.tap()
+        categories.typeText("cooperative, two-player")
+        app.buttons["game.save"].tap()
+
+        let card = app.buttons["game.card.Sky Team"]
+        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        XCTAssertTrue(card.label.contains("Players unknown"))
+        XCTAssertTrue(card.label.contains("Time unknown"))
+        XCTAssertTrue(card.label.contains("cooperative"))
+    }
+
+    @MainActor
+    func testDeleteGameCitesAndCascadesOnePlay() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing", "-ui-testing-seed-play"]
+        app.launch()
+
+        let card = app.buttons["game.card.Seeded Game"]
+        XCTAssertTrue(card.waitForExistence(timeout: 10))
+        card.tap()
+
+        let delete = app.buttons["game.delete"]
+        XCTAssertTrue(delete.waitForExistence(timeout: 5))
+        delete.tap()
+
+        let destructive = app.buttons["Delete Game and 1 Play"]
+        XCTAssertTrue(destructive.waitForExistence(timeout: 5))
+        destructive.tap()
+
+        XCTAssertTrue(app.otherElements["shelf.empty"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["game.card.Seeded Game"].exists)
+    }
+
+    @MainActor
+    func testPeopleRosterCreateEditAndDelete() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing"]
+        app.launch()
+
+        app.tabBars.buttons["People"].tap()
+        XCTAssertTrue(app.otherElements["people.empty"].waitForExistence(timeout: 5))
+        app.buttons["people.addPerson"].tap()
+
+        let name = app.textFields["person.name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.tap()
+        name.typeText("Ana")
+        app.buttons["person.save"].tap()
+
+        let row = app.buttons["person.row.Ana"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        row.tap()
+        let editedName = app.textFields["person.name"]
+        editedName.tap()
+        editedName.clearAndTypeText("Anita")
+        app.buttons["person.save"].tap()
+
+        let editedRow = app.buttons["person.row.Anita"]
+        XCTAssertTrue(editedRow.waitForExistence(timeout: 5))
+        editedRow.tap()
+        app.buttons["person.delete"].tap()
+        app.buttons["Delete Local Person"].tap()
+        XCTAssertTrue(app.otherElements["people.empty"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testValidationMessagesAreVisibleForEmptyRequiredFields() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing"]
+        app.launch()
+
+        app.buttons["shelf.addGame"].tap()
+        app.buttons["game.save"].tap()
+        let gameError = app.staticTexts["game.error"]
+        XCTAssertTrue(gameError.waitForExistence(timeout: 5))
+        XCTAssertTrue(gameError.label.contains("Title is required"))
+        app.buttons["game.cancel"].tap()
+
+        app.tabBars.buttons["People"].tap()
+        app.buttons["people.addPerson"].tap()
+        app.buttons["person.save"].tap()
+        let personError = app.staticTexts["person.error"]
+        XCTAssertTrue(personError.waitForExistence(timeout: 5))
+        XCTAssertTrue(personError.label.contains("Name is required"))
+    }
+
+    @MainActor
+    func testManagementScreensPassAccessibilityAuditAtAX5() throws {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-ui-testing",
+            "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL",
+        ]
+        app.launchEnvironment["UIPreferredContentSizeCategoryName"] = "UICTContentSizeCategoryAccessibilityXXXL"
+        app.launch()
+
+        XCTAssertTrue(app.buttons["shelf.addGame"].waitForExistence(timeout: 10))
+        try app.performAccessibilityAudit()
+        app.tabBars.buttons["People"].tap()
+        XCTAssertTrue(app.buttons["people.addPerson"].waitForExistence(timeout: 5))
+        try app.performAccessibilityAudit()
+    }
+}
+
+private extension XCUIElement {
+    func clearAndTypeText(_ text: String) {
+        tap()
+        press(forDuration: 0.8)
+        let selectAll = XCUIApplication().menuItems["Select All"]
+        if selectAll.waitForExistence(timeout: 2) {
+            selectAll.tap()
+            typeText(text)
+        } else {
+            typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: (value as? String)?.count ?? 0))
+            typeText(text)
+        }
     }
 }
