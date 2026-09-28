@@ -15,7 +15,7 @@
 3. **Accessibility**:
    - Every interactive control carries an `accessibilityIdentifier` and `accessibilityLabel`.
    - VoiceOver summaries for game cards and person rows.
-   - Dynamic Type AX5 (`UICTContentSizeCategoryAccessibilityXXXL`) audit suite in XCUITest.
+   - Dynamic Type AX5 (`UICTContentSizeCategoryAccessibilityXXXL`) hittability test suite in XCUITest.
 4. **App Root Composition**:
    - `GameCrateApp` wires `GameCrateModel` with in-memory fallback during test/error launches and sandboxed SQLite URL during standard execution.
 
