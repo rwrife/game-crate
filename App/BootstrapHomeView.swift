@@ -622,7 +622,7 @@ private struct GameEditorView: View {
             minimumPlayers: hasPlayerRange ? minimumPlayers : nil,
             maximumPlayers: hasPlayerRange ? maximumPlayers : nil,
             playTimeMinutes: hasPlayTime ? playTimeMinutes : nil,
-            categories: parsedCategoryStrings.map(CategoryTag.init),
+            categories: parsedCategoryStrings.map { CategoryTag($0) },
             notes: notes.trimmingCharacters(in: .whitespacesAndNewlines)
         )
 
