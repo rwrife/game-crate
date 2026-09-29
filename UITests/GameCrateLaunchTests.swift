@@ -106,6 +106,67 @@ final class GameCrateLaunchTests: XCTestCase {
         XCTAssertTrue(personError.waitForExistence(timeout: 5))
     }
 
+    @MainActor
+    func testShortlistPickLogAndWallUpdateJourney() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing", "-ui-testing-seed-shortlist"]
+        app.launch()
+
+        app.tabBars.buttons["Tonight"].tap()
+
+        let pick = app.buttons["shortlist.pick.Cascadia"]
+        XCTAssertTrue(pick.waitForExistence(timeout: 10))
+        XCTAssertTrue(pick.label.contains("Never played"))
+
+        let unspecified = app.buttons["shortlist.unspecified"]
+        XCTAssertTrue(unspecified.waitForExistence(timeout: 5))
+        XCTAssertTrue(unspecified.label.contains("1"))
+
+        let exclusion = element(app, identifier: "shortlist.exclusion.Twilight Imperium")
+        XCTAssertTrue(exclusion.waitForExistence(timeout: 5))
+
+        pick.tap()
+        let save = app.buttons["quicklog.save"]
+        XCTAssertTrue(save.waitForExistence(timeout: 5))
+        save.tap()
+
+        let wallCard = app.buttons["wall.game.Cascadia"]
+        XCTAssertTrue(wallCard.waitForExistence(timeout: 5))
+        XCTAssertTrue(wallCard.label.contains("Fits tonight"))
+        XCTAssertTrue(wallCard.label.contains("Last played today"))
+    }
+
+    @MainActor
+    func testCorrectionAppendsVisibleCompensatingEvent() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing", "-ui-testing-seed-shortlist"]
+        app.launch()
+
+        app.tabBars.buttons["Tonight"].tap()
+        XCTAssertTrue(app.buttons["shortlist.pick.Cascadia"].waitForExistence(timeout: 10))
+        app.buttons["shortlist.pick.Cascadia"].tap()
+        app.buttons["quicklog.save"].tap()
+
+        let wallCard = app.buttons["wall.game.Cascadia"]
+        XCTAssertTrue(wallCard.waitForExistence(timeout: 5))
+        wallCard.tap()
+
+        let correctionButton = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH %@", "history.correct.")
+        ).firstMatch
+        XCTAssertTrue(correctionButton.waitForExistence(timeout: 5))
+        correctionButton.tap()
+        XCTAssertTrue(app.buttons["quicklog.save"].waitForExistence(timeout: 5))
+        app.buttons["quicklog.save"].tap()
+
+        let superseded = app.staticTexts["Superseded by a compensating correction"]
+        XCTAssertTrue(superseded.waitForExistence(timeout: 5))
+        let correction = app.staticTexts.matching(
+            NSPredicate(format: "label BEGINSWITH %@", "Correction —")
+        ).firstMatch
+        XCTAssertTrue(correction.waitForExistence(timeout: 5))
+    }
+
     /// Issue #4 acceptance: Dynamic Type reflow. Key controls on both
     /// management screens stay hittable at AX5, the largest accessibility
     /// content size category.

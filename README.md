@@ -97,7 +97,7 @@ evidence exists yet.** Remaining backlog:
 1. ~~CrateKit domain (shelf, ledger, fit engine, unknown-safe semantics)~~ ✅
 2. ~~GRDB store (`Packages/CrateStore`) + schema v1 + repositories~~ ✅
 3. ~~Shelf + people management UI~~ ✅ (issue #4)
-4. Play logging, crate wall, tonight's shortlist UI (incl. `CrateWorkspaceLayout` seam)
+4. ~~Play logging, crate wall, tonight's shortlist UI (incl. `CrateWorkspaceLayout` seam)~~ ✅ (issue #5)
 5. Player profiles + shelf analytics at the UI edge
 6. Backup/restore/CSV export + privacy controls
 7. TestFlight/release packaging with real evidence gates
