@@ -699,7 +699,6 @@ private struct GamePlayHistoryView: View {
                                     .foregroundStyle(.secondary)
                             }
                         }
-                        .accessibilityIdentifier("history.event.\(event.id.uuidString)")
                     }
                 }
             }
