@@ -155,16 +155,21 @@ final class GameCrateLaunchTests: XCTestCase {
             NSPredicate(format: "identifier BEGINSWITH %@", "history.correct.")
         ).firstMatch
         XCTAssertTrue(correctionButton.waitForExistence(timeout: 5))
+        let originalEventIdentifier = correctionButton.identifier
         correctionButton.tap()
         XCTAssertTrue(app.buttons["quicklog.save"].waitForExistence(timeout: 5))
         app.buttons["quicklog.save"].tap()
 
         let superseded = app.staticTexts["Superseded by a compensating correction"]
         XCTAssertTrue(superseded.waitForExistence(timeout: 5))
-        let correction = app.descendants(matching: .any).matching(
-            NSPredicate(format: "identifier BEGINSWITH %@", "history.correction.")
-        ).firstMatch
-        XCTAssertTrue(correction.waitForExistence(timeout: 5))
+        // The original event is now superseded, so the only row still offering
+        // a correction is the newly appended compensating event.
+        let remainingCorrectionButtons = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH %@", "history.correct.")
+        )
+        XCTAssertTrue(remainingCorrectionButtons.firstMatch.waitForExistence(timeout: 5))
+        XCTAssertEqual(remainingCorrectionButtons.count, 1)
+        XCTAssertNotEqual(remainingCorrectionButtons.element(boundBy: 0).identifier, originalEventIdentifier)
     }
 
     /// Issue #4 acceptance: Dynamic Type reflow. Key controls on both
