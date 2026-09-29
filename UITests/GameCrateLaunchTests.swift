@@ -83,7 +83,7 @@ final class GameCrateLaunchTests: XCTestCase {
         XCTAssertTrue(editedRow.waitForExistence(timeout: 5))
         editedRow.tap()
         app.buttons["person.delete"].tap()
-        app.buttons["Delete Local Person"].tap()
+        app.buttons["Delete Person"].tap()
         XCTAssertTrue(element(app, identifier: "people.empty").waitForExistence(timeout: 5))
     }
 
@@ -95,17 +95,15 @@ final class GameCrateLaunchTests: XCTestCase {
 
         app.buttons["shelf.addGame"].tap()
         app.buttons["game.save"].tap()
-        let gameError = element(app, identifier: "game.error")
+        let gameError = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Title is required")).firstMatch
         XCTAssertTrue(gameError.waitForExistence(timeout: 5))
-        XCTAssertTrue(gameError.label.contains("Title is required"))
         app.buttons["game.cancel"].tap()
 
         app.tabBars.buttons["People"].tap()
         app.buttons["people.addPerson"].tap()
         app.buttons["person.save"].tap()
-        let personError = element(app, identifier: "person.error")
+        let personError = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Name is required")).firstMatch
         XCTAssertTrue(personError.waitForExistence(timeout: 5))
-        XCTAssertTrue(personError.label.contains("Name is required"))
     }
 
     /// Issue #4 acceptance: Dynamic Type reflow. Key controls on both

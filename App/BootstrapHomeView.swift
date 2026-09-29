@@ -487,6 +487,14 @@ private struct GameEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
+                if let validationMessage {
+                    Section {
+                        Text(validationMessage)
+                            .foregroundStyle(.red)
+                            .accessibilityIdentifier("game.error")
+                    }
+                }
+
                 Section("Basics") {
                     TextField("Title", text: $title)
                         .accessibilityIdentifier("game.title")
@@ -556,14 +564,6 @@ private struct GameEditorView: View {
                         .lineLimit(2 ... 5)
                         .accessibilityIdentifier("game.notes")
                         .accessibilityLabel("Game notes")
-                }
-
-                if let validationMessage {
-                    Section {
-                        Text(validationMessage)
-                            .foregroundStyle(.red)
-                            .accessibilityIdentifier("game.error")
-                    }
                 }
             }
             .navigationTitle(context == .create ? "Add Game" : "Edit Game")
@@ -747,6 +747,14 @@ private struct PersonEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
+                if let validationMessage {
+                    Section {
+                        Text(validationMessage)
+                            .foregroundStyle(.red)
+                            .accessibilityIdentifier("person.error")
+                    }
+                }
+
                 Section("Person") {
                     TextField("Name", text: $name)
                         .accessibilityIdentifier("person.name")
@@ -756,14 +764,6 @@ private struct PersonEditorView: View {
                         .lineLimit(2 ... 5)
                         .accessibilityIdentifier("person.notes")
                         .accessibilityLabel("Person notes")
-                }
-
-                if let validationMessage {
-                    Section {
-                        Text(validationMessage)
-                            .foregroundStyle(.red)
-                            .accessibilityIdentifier("person.error")
-                    }
                 }
 
                 if case let .edit(personID) = context {
