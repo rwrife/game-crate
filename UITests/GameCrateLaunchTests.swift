@@ -161,7 +161,7 @@ final class GameCrateLaunchTests: XCTestCase {
 
         let superseded = app.staticTexts["Superseded by a compensating correction"]
         XCTAssertTrue(superseded.waitForExistence(timeout: 5))
-        let correction = app.staticTexts.matching(
+        let correction = app.descendants(matching: .any).matching(
             NSPredicate(format: "identifier BEGINSWITH %@", "history.correction.")
         ).firstMatch
         XCTAssertTrue(correction.waitForExistence(timeout: 5))
