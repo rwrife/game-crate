@@ -686,7 +686,13 @@ private struct GamePlayHistoryView: View {
                 } else {
                     ForEach(events) { event in
                         VStack(alignment: .leading, spacing: 5) {
-                            Text(historyTitle(event)).font(.headline)
+                            Text(historyTitle(event))
+                                .font(.headline)
+                                .accessibilityIdentifier(
+                                    event.correctionOf == nil
+                                        ? "history.play.\(event.id.uuidString)"
+                                        : "history.correction.\(event.id.uuidString)"
+                                )
                             Text("Players: \(event.participants.count)")
                             if let notes = event.notes, !notes.isEmpty { Text(notes) }
                             if effectiveIDs.contains(event.id) {
