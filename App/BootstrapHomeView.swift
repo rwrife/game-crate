@@ -18,7 +18,10 @@ final class GameCrateModel {
 
     private(set) var games: [Game] = []
     private(set) var people: [Person] = []
+    private(set) var ledger = PlayLedger()
     private(set) var playCountsByGame: [UUID: Int] = [:]
+    var tonightPlayerCount = 2
+    var tonightTimeBudgetMinutes = 60
     var errorMessage: String?
 
     private init(store: CrateStore, startupError: String? = nil) {
@@ -37,6 +40,9 @@ final class GameCrateModel {
             let model = GameCrateModel(store: (try? CrateStore.inMemory()) ?? (try! CrateStore.inMemory()))
             if args.contains("-ui-testing-seed-play") {
                 model.seedFixtureForDeletionFlow()
+            }
+            if args.contains("-ui-testing-seed-shortlist") {
+                model.seedFixtureForTonightFlow()
             }
             return model
         }
@@ -64,12 +70,16 @@ final class GameCrateModel {
             let loadedPeople = try personRepository.allPeople()
 
             var counts: [UUID: Int] = [:]
+            var ledgerEvents: [PlayEvent] = []
             for game in loadedGames {
-                counts[game.id] = try playRepository.events(for: game.id).count
+                let gameEvents = try playRepository.events(for: game.id)
+                counts[game.id] = gameEvents.count
+                ledgerEvents.append(contentsOf: gameEvents)
             }
 
             games = loadedGames
             people = loadedPeople
+            ledger = PlayLedger(events: ledgerEvents)
             playCountsByGame = counts
         } catch {
             errorMessage = "Game Crate could not read local data: \(error.localizedDescription)"
@@ -92,6 +102,67 @@ final class GameCrateModel {
 
     func playCount(for gameID: UUID) -> Int {
         playCountsByGame[gameID, default: 0]
+    }
+
+    func plays(for gameID: UUID) -> [PlayEvent] {
+        do {
+            return try playRepository.events(for: gameID)
+        } catch {
+            errorMessage = "Play events could not be loaded: \(error.localizedDescription)"
+            return []
+        }
+    }
+
+    func effectivePlays(for gameID: UUID) -> [PlayEvent] {
+        ledger.effectiveEvents.filter { $0.gameID == gameID }
+    }
+
+    func daysSinceLastPlay(for game: Game, asOf: Date = .now, calendar: Calendar = .current) -> Int? {
+        let gamePlays = effectivePlays(for: game.id)
+        return Derivations.daysSinceLastPlay(plays: gamePlays, asOf: asOf, calendar: calendar)
+    }
+
+    func evaluateTonightFit(asOf: Date = .now, calendar: Calendar = .current) -> FitResult {
+        let query = FitQuery(
+            playerCount: tonightPlayerCount,
+            timeBudgetMinutes: tonightTimeBudgetMinutes
+        )
+        return FitEngine().evaluate(
+            games: games,
+            ledger: ledger,
+            asOf: asOf,
+            query: query,
+            calendar: calendar
+        )
+    }
+
+    @discardableResult
+    func recordPlay(
+        gameID: UUID,
+        occurredAt: Date?,
+        participantIDs: [UUID],
+        ratings: [UUID: Rating] = [:],
+        notes: String? = nil,
+        correctionOf: UUID? = nil
+    ) -> Bool {
+        let participants = participantIDs.map { personID in
+            PlayParticipant(personID: personID, rating: ratings[personID], notes: nil)
+        }
+        let event = PlayEvent(
+            gameID: gameID,
+            occurredAt: occurredAt,
+            participants: participants,
+            notes: notes?.trimmingCharacters(in: .whitespacesAndNewlines),
+            correctionOf: correctionOf
+        )
+        do {
+            try playRepository.append(event)
+            reload()
+            return true
+        } catch {
+            errorMessage = "Play could not be saved: \(error.localizedDescription)"
+            return false
+        }
     }
 
     @discardableResult
@@ -143,6 +214,38 @@ final class GameCrateModel {
         }
     }
 
+    private func seedFixtureForTonightFlow() {
+        guard games.isEmpty else { return }
+        do {
+            let fittedGame = Game(
+                title: "Cascadia",
+                minimumPlayers: 1,
+                maximumPlayers: 4,
+                playTimeMinutes: 45,
+                categories: ["family", "strategy"]
+            )
+            let excludedGame = Game(
+                title: "Twilight Imperium",
+                minimumPlayers: 3,
+                maximumPlayers: 8,
+                playTimeMinutes: 360,
+                categories: ["strategy"]
+            )
+            let unspecifiedGame = Game(
+                title: "Mystery Box",
+                categories: ["party"]
+            )
+            let person = Person(name: "Ana")
+            try gameRepository.save(fittedGame)
+            try gameRepository.save(excludedGame)
+            try gameRepository.save(unspecifiedGame)
+            try personRepository.save(person)
+            reload()
+        } catch {
+            errorMessage = "Fixture seed failed: \(error.localizedDescription)"
+        }
+    }
+
     private func seedFixtureForDeletionFlow() {
         guard games.isEmpty else { return }
         do {
@@ -173,7 +276,21 @@ final class GameCrateModel {
 
 enum GameCrateTab: Hashable {
     case shelf
+    case tonight
+    case wall
     case people
+}
+
+/// The single iPhone workspace layout seam. Today it deliberately renders a
+/// compact single-column stack. If Apple ships fold-region APIs, this is the
+/// only type that should map folded quick-log to one display and unfolded
+/// wall + workbench to a two-display span. See README "iPhone Duo".
+private struct CrateWorkspaceLayout<Content: View>: View {
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        VStack(spacing: 0, content: content)
+    }
 }
 
 struct BootstrapHomeView: View {
@@ -181,23 +298,436 @@ struct BootstrapHomeView: View {
     @State private var selectedTab: GameCrateTab = .shelf
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            ShelfView(model: model)
-                .tabItem {
-                    Label("Shelf", systemImage: "shippingbox")
-                        .accessibilityIdentifier("tab.shelf")
-                        .accessibilityLabel("Shelf")
-                }
-                .tag(GameCrateTab.shelf)
+        CrateWorkspaceLayout {
+            TabView(selection: $selectedTab) {
+                ShelfView(model: model)
+                    .tabItem {
+                        Label("Shelf", systemImage: "shippingbox")
+                            .accessibilityIdentifier("tab.shelf")
+                            .accessibilityLabel("Shelf")
+                    }
+                    .tag(GameCrateTab.shelf)
 
-            PeopleRosterView(model: model)
-                .tabItem {
-                    Label("People", systemImage: "person.2")
-                        .accessibilityIdentifier("tab.people")
-                        .accessibilityLabel("People")
+                TonightView(model: model) {
+                    selectedTab = .wall
                 }
-                .tag(GameCrateTab.people)
+                .tabItem {
+                    Label("Tonight", systemImage: "sparkles")
+                        .accessibilityIdentifier("tab.tonight")
+                        .accessibilityLabel("Tonight")
+                }
+                .tag(GameCrateTab.tonight)
+
+                CrateWallView(model: model)
+                    .tabItem {
+                        Label("Wall", systemImage: "square.grid.2x2")
+                            .accessibilityIdentifier("tab.wall")
+                            .accessibilityLabel("Wall")
+                    }
+                    .tag(GameCrateTab.wall)
+
+                PeopleRosterView(model: model)
+                    .tabItem {
+                        Label("People", systemImage: "person.2")
+                            .accessibilityIdentifier("tab.people")
+                            .accessibilityLabel("People")
+                    }
+                    .tag(GameCrateTab.people)
+            }
         }
+    }
+}
+
+private struct TonightView: View {
+    @Bindable var model: GameCrateModel
+    let onPlaySaved: () -> Void
+
+    @State private var quickLogGame: Game?
+    @State private var showingUnspecified = false
+
+    private var result: FitResult { model.evaluateTonightFit() }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Tonight's fit") {
+                    Stepper("Players: \(model.tonightPlayerCount)", value: $model.tonightPlayerCount, in: 1 ... 20)
+                        .accessibilityIdentifier("tonight.players")
+                        .accessibilityLabel("Tonight player count")
+                    Stepper("Time: \(model.tonightTimeBudgetMinutes) minutes", value: $model.tonightTimeBudgetMinutes, in: 15 ... 480, step: 15)
+                        .accessibilityIdentifier("tonight.minutes")
+                        .accessibilityLabel("Tonight time budget")
+                }
+
+                Section("Ranked picks") {
+                    if result.shortlist.isEmpty {
+                        Text("No known-fit games for these settings.")
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("shortlist.empty")
+                    } else {
+                        ForEach(result.shortlist, id: \.game.id) { entry in
+                            Button {
+                                quickLogGame = entry.game
+                            } label: {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(entry.game.title)
+                                        .font(.headline)
+                                    Text(recencyText(entry.daysSinceLastPlay))
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .accessibilityIdentifier("shortlist.pick.\(entry.game.title)")
+                            .accessibilityLabel("Pick \(entry.game.title), \(recencyText(entry.daysSinceLastPlay))")
+                        }
+                    }
+                }
+
+                Section("Needs details") {
+                    Button("Unspecified games: \(result.unspecifiedCount)") {
+                        showingUnspecified = true
+                    }
+                    .accessibilityIdentifier("shortlist.unspecified")
+                    .accessibilityLabel("Show \(result.unspecifiedCount) games with unspecified fit fields")
+                    .disabled(result.unspecifiedGames.isEmpty)
+                }
+
+                Section("Excluded") {
+                    if result.exclusions.isEmpty {
+                        Text("No named exclusions.")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(result.exclusions, id: \.game.id) { exclusion in
+                            ExclusionDisclosure(exclusion: exclusion)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Tonight")
+            .sheet(isPresented: $showingUnspecified) {
+                NavigationStack {
+                    List(result.unspecifiedGames) { game in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(game.title).font(.headline)
+                            Text("Player range or play time is unknown.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        .accessibilityIdentifier("unspecified.game.\(game.title)")
+                    }
+                    .navigationTitle("Unspecified")
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { showingUnspecified = false }
+                                .accessibilityIdentifier("unspecified.done")
+                                .accessibilityLabel("Close unspecified games")
+                        }
+                    }
+                }
+            }
+            .sheet(item: $quickLogGame) { game in
+                QuickLogView(model: model, game: game) { saved in
+                    quickLogGame = nil
+                    if saved { onPlaySaved() }
+                }
+            }
+        }
+    }
+
+    private func recencyText(_ days: Int?) -> String {
+        guard let days else { return "Never played or date unknown" }
+        if days == 0 { return "Played today" }
+        if days == 1 { return "Last played 1 day ago" }
+        return "Last played \(days) days ago"
+    }
+}
+
+private struct ExclusionDisclosure: View {
+    let exclusion: FitExclusion
+    @State private var isExpanded = false
+
+    var body: some View {
+        DisclosureGroup(isExpanded: $isExpanded) {
+            ForEach(Array(exclusion.reasons.enumerated()), id: \.offset) { _, reason in
+                Text(exclusionText(reason))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        } label: {
+            Text(exclusion.game.title)
+        }
+        .accessibilityIdentifier("shortlist.exclusion.\(exclusion.game.title)")
+        .accessibilityLabel("Exclusion reasons for \(exclusion.game.title)")
+    }
+
+    private func exclusionText(_ reason: ExclusionReason) -> String {
+        switch reason {
+        case let .tooFewPlayers(minimum, requested):
+            "Needs at least \(minimum) players; tonight has \(requested)."
+        case let .tooManyPlayers(maximum, requested):
+            "Supports at most \(maximum) players; tonight has \(requested)."
+        case let .exceedsTimeBudget(gameMinutes, budgetMinutes):
+            "Takes \(gameMinutes) minutes; budget is \(budgetMinutes)."
+        case let .missingCategory(categories):
+            "Missing categories: \(categories.map(\.rawValue).joined(separator: ", "))."
+        }
+    }
+}
+
+private struct CrateWallView: View {
+    @Bindable var model: GameCrateModel
+    @State private var historyGame: Game?
+
+    private var fit: FitResult { model.evaluateTonightFit() }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if model.games.isEmpty {
+                    ContentUnavailableView(
+                        "The wall is empty",
+                        systemImage: "square.grid.2x2",
+                        description: Text("Add a game on the Shelf first.")
+                    )
+                    .accessibilityIdentifier("wall.empty")
+                } else {
+                    ForEach(model.games) { game in
+                        Button {
+                            historyGame = game
+                        } label: {
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text(game.title).font(.headline)
+                                Text(fitStatus(game))
+                                    .font(.subheadline)
+                                    .foregroundStyle(fit.shortlist.contains { $0.game.id == game.id } ? Color.green : Color.secondary)
+                                Text(lastPlayedText(game))
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .accessibilityIdentifier("wall.game.\(game.title)")
+                        .accessibilityLabel("\(game.title), \(fitStatus(game)), \(lastPlayedText(game))")
+                    }
+                }
+            }
+            .navigationTitle("Crate Wall")
+            .sheet(item: $historyGame) { game in
+                GamePlayHistoryView(model: model, game: game) {
+                    historyGame = nil
+                }
+            }
+        }
+    }
+
+    private func fitStatus(_ game: Game) -> String {
+        if fit.shortlist.contains(where: { $0.game.id == game.id }) { return "Fits tonight" }
+        if fit.unspecifiedGames.contains(where: { $0.id == game.id }) { return "Fit unknown" }
+        return "Does not fit tonight"
+    }
+
+    private func lastPlayedText(_ game: Game) -> String {
+        let plays = model.effectivePlays(for: game.id)
+        guard !plays.isEmpty else { return "Never played" }
+        guard let days = model.daysSinceLastPlay(for: game) else { return "Last played: date unknown" }
+        if days == 0 { return "Last played today" }
+        if days == 1 { return "Last played 1 day ago" }
+        return "Last played \(days) days ago"
+    }
+}
+
+private struct QuickLogView: View {
+    @Bindable var model: GameCrateModel
+    let game: Game
+    let correction: PlayEvent?
+    /// Called with `true` after a successful save, `false` on cancel. The
+    /// presenting sheet owns dismissal so its `item` state stays in sync.
+    let onFinish: (_ saved: Bool) -> Void
+
+    @State private var occurredAt: Date
+    @State private var selectedPeople: Set<UUID>
+    @State private var ratings: [UUID: Int]
+    @State private var notes: String
+
+    init(model: GameCrateModel, game: Game, correction: PlayEvent? = nil, onFinish: @escaping (_ saved: Bool) -> Void) {
+        self.model = model
+        self.game = game
+        self.correction = correction
+        self.onFinish = onFinish
+        _occurredAt = State(initialValue: correction?.occurredAt ?? .now)
+        _selectedPeople = State(initialValue: Set(correction?.participants.map(\.personID) ?? []))
+        _ratings = State(initialValue: Dictionary(uniqueKeysWithValues: correction?.participants.compactMap { participant in
+            participant.rating.map { (participant.personID, $0.rawValue) }
+        } ?? []))
+        _notes = State(initialValue: correction?.notes ?? "")
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Play") {
+                    LabeledContent("Game", value: game.title)
+                    DatePicker("Date", selection: $occurredAt, displayedComponents: [.date])
+                        .accessibilityIdentifier("quicklog.date")
+                        .accessibilityLabel("Play date")
+                }
+
+                Section("Players") {
+                    if model.people.isEmpty {
+                        Text("No people yet. Save the play now and add participants later with a correction.")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(model.people) { person in
+                            Toggle(person.name, isOn: participantBinding(person.id))
+                                .accessibilityIdentifier("quicklog.person.\(person.name)")
+                                .accessibilityLabel("Include \(person.name)")
+
+                            if selectedPeople.contains(person.id) {
+                                Toggle("Rate \(person.name)", isOn: ratingEnabledBinding(person.id))
+                                    .accessibilityIdentifier("quicklog.rate.\(person.name)")
+                                    .accessibilityLabel("Add rating for \(person.name)")
+                                if ratings[person.id] != nil {
+                                    Stepper("\(person.name) rating: \(ratings[person.id] ?? 3)", value: ratingBinding(person.id), in: 1 ... 5)
+                                        .accessibilityIdentifier("quicklog.rating.\(person.name)")
+                                        .accessibilityLabel("Rating for \(person.name)")
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Section("Optional notes") {
+                    TextField("Add later if you want", text: $notes, axis: .vertical)
+                        .lineLimit(2 ... 5)
+                        .accessibilityIdentifier("quicklog.notes")
+                        .accessibilityLabel("Play notes")
+                }
+            }
+            .navigationTitle(correction == nil ? "Quick Log" : "Correct Play")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { onFinish(false) }
+                        .accessibilityIdentifier("quicklog.cancel")
+                        .accessibilityLabel("Cancel play log")
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { save() }
+                        .accessibilityIdentifier("quicklog.save")
+                        .accessibilityLabel("Save play")
+                }
+            }
+        }
+    }
+
+    private func participantBinding(_ personID: UUID) -> Binding<Bool> {
+        Binding(
+            get: { selectedPeople.contains(personID) },
+            set: { selected in
+                if selected { selectedPeople.insert(personID) }
+                else {
+                    selectedPeople.remove(personID)
+                    ratings.removeValue(forKey: personID)
+                }
+            }
+        )
+    }
+
+    private func ratingEnabledBinding(_ personID: UUID) -> Binding<Bool> {
+        Binding(
+            get: { ratings[personID] != nil },
+            set: { enabled in
+                if enabled { ratings[personID] = ratings[personID] ?? 3 }
+                else { ratings.removeValue(forKey: personID) }
+            }
+        )
+    }
+
+    private func ratingBinding(_ personID: UUID) -> Binding<Int> {
+        Binding(
+            get: { ratings[personID] ?? 3 },
+            set: { ratings[personID] = $0 }
+        )
+    }
+
+    private func save() {
+        let domainRatings = ratings.reduce(into: [UUID: Rating]()) { partial, pair in
+            partial[pair.key] = Rating(rawValue: pair.value)
+        }
+        guard model.recordPlay(
+            gameID: game.id,
+            occurredAt: occurredAt,
+            participantIDs: Array(selectedPeople),
+            ratings: domainRatings,
+            notes: notes,
+            correctionOf: correction?.id
+        ) else { return }
+        onFinish(true)
+    }
+}
+
+private struct GamePlayHistoryView: View {
+    @Bindable var model: GameCrateModel
+    let game: Game
+    let onDone: () -> Void
+
+    @State private var correction: PlayEvent?
+
+    private var events: [PlayEvent] { model.plays(for: game.id) }
+    private var effectiveIDs: Set<UUID> { Set(model.effectivePlays(for: game.id).map(\.id)) }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if events.isEmpty {
+                    Text("No plays logged.")
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("history.empty")
+                } else {
+                    ForEach(events) { event in
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(historyTitle(event))
+                                .font(.headline)
+                                .accessibilityIdentifier(
+                                    event.correctionOf == nil
+                                        ? "history.play.\(event.id.uuidString)"
+                                        : "history.correction.\(event.id.uuidString)"
+                                )
+                            Text("Players: \(event.participants.count)")
+                            if let notes = event.notes, !notes.isEmpty { Text(notes) }
+                            if effectiveIDs.contains(event.id) {
+                                Button("Correct this play") { correction = event }
+                                    .accessibilityIdentifier("history.correct.\(event.id.uuidString)")
+                                    .accessibilityLabel("Correct play for \(game.title)")
+                            } else {
+                                Text("Superseded by a compensating correction")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("\(game.title) History")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done", action: onDone)
+                        .accessibilityIdentifier("history.done")
+                        .accessibilityLabel("Close play history")
+                }
+            }
+            .sheet(item: $correction) { event in
+                QuickLogView(model: model, game: game, correction: event) { _ in
+                    correction = nil
+                }
+            }
+        }
+    }
+
+    private func historyTitle(_ event: PlayEvent) -> String {
+        let prefix = event.correctionOf == nil ? "Play" : "Correction"
+        guard let date = event.occurredAt else { return "\(prefix) — date unknown" }
+        return "\(prefix) — \(date.formatted(date: .abbreviated, time: .omitted))"
     }
 }
 
