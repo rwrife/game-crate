@@ -98,9 +98,19 @@ evidence exists yet.** Remaining backlog:
 2. ~~GRDB store (`Packages/CrateStore`) + schema v1 + repositories~~ ✅
 3. ~~Shelf + people management UI~~ ✅ (issue #4)
 4. ~~Play logging, crate wall, tonight's shortlist UI (incl. `CrateWorkspaceLayout` seam)~~ ✅ (issue #5)
-5. Player profiles + shelf analytics at the UI edge
+5. ~~Player profiles + shelf analytics at the UI edge~~ ✅ (issue #6)
 6. Backup/restore/CSV export + privacy controls
 7. TestFlight/release packaging with real evidence gates
+
+Insights UI landed (issue #6, milestone M5): the Insights tab renders
+count-only per-player profiles (plays logged, rated fraction, 1–5 rating
+distribution, per-category counts — no personality labels, no predictions, no
+wellness framing) and an explainable shelf-hole list answering only
+user-authored tag/range requests, with unknown-field games explicitly counted
+as "never counted" instead of silently included or excluded. CI adds a
+UI-target hygiene gate (`scripts/check_ui_network_hygiene.sh`, empty allowlist)
+asserting no network or tracking symbols and no unvetted imports are reachable
+from `App/`. See `docs/insights-ui-evidence.md` for host vs CI evidence.
 
 Store layer landed (issue #3, milestone M2): `Packages/CrateStore` pins GRDB.swift
 exactly to 7.11.1 and ships the frozen v1 SQLite schema (`games`, `people`,
