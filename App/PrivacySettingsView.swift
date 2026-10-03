@@ -180,10 +180,18 @@ private struct RestorePreviewCard: View {
 
     private var summary: String {
         let incoming = PlayLedger(events: preview.snapshot.playEvents).effectiveEvents.count
-        return "Backup contains \(plural(preview.snapshot.games.count, "game")), \(plural(preview.snapshot.people.count, "person")), and \(plural(incoming, "play")). Replacing swaps out your current \(plural(preview.currentGameCount, "game")), \(plural(preview.currentPersonCount, "person")), and \(plural(preview.currentPlayCount, "play")). This cannot be undone — export a backup first if unsure."
+        return "Backup contains \(games(preview.snapshot.games.count)), \(people(preview.snapshot.people.count)), and \(plays(incoming)). Replacing swaps out your current \(games(preview.currentGameCount)), \(people(preview.currentPersonCount)), and \(plays(preview.currentPlayCount)). This cannot be undone — export a backup first if unsure."
     }
 
-    private func plural(_ count: Int, _ noun: String) -> String {
-        count == 1 ? "1 \(noun)" : "\(count) \(noun)s"
+    private func games(_ count: Int) -> String {
+        count == 1 ? "1 game" : "\(count) games"
+    }
+
+    private func people(_ count: Int) -> String {
+        count == 1 ? "1 person" : "\(count) people"
+    }
+
+    private func plays(_ count: Int) -> String {
+        count == 1 ? "1 play" : "\(count) plays"
     }
 }
