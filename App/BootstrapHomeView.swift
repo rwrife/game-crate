@@ -24,6 +24,17 @@ final class GameCrateModel {
     var tonightTimeBudgetMinutes = 60
     var errorMessage: String?
 
+    // Shelf-hole request builder (issue #6). Requests are user-entered query
+    // shapes, not stored data: they live for the session, so the frozen
+    // CrateStore schema v1 stays untouched.
+    var holeRequests: [ShelfHole] = []
+    var draftMinPlayers = 2
+    var draftMaxPlayers = 2
+    var draftMaxMinutes = 30
+    var draftUsesCategory = false
+    var draftCategoryTag = ""
+    var holeValidationError: String?
+
     private init(store: CrateStore, startupError: String? = nil) {
         self.store = store
         gameRepository = GRDBGameRepository(db: store.db)
@@ -43,6 +54,9 @@ final class GameCrateModel {
             }
             if args.contains("-ui-testing-seed-shortlist") {
                 model.seedFixtureForTonightFlow()
+            }
+            if args.contains("-ui-testing-seed-insights") {
+                model.seedFixtureForInsightsFlow()
             }
             return model
         }
@@ -134,6 +148,64 @@ final class GameCrateModel {
             query: query,
             calendar: calendar
         )
+    }
+
+    /// Count-only per-player profile straight from the ledger. Absent history
+    /// yields zero counts; nothing here interpolates or predicts.
+    func profile(for personID: UUID) -> PlayerProfileCounts {
+        Derivations.playerProfile(personID: personID, ledger: ledger, games: games)
+    }
+
+    /// Explainable coverage results for the user's requested hole shapes.
+    func shelfCoverage() -> [ShelfCoverage] {
+        Derivations.coverageHoles(requested: holeRequests, games: games)
+    }
+
+    /// Titles of shelf games proven to cover a hole request — the per-line
+    /// evidence behind each hole row.
+    func titles(fitting hole: ShelfHole) -> [String] {
+        let ids = Set(Derivations.gamesFitting(hole: hole, games: games))
+        return games
+            .filter { ids.contains($0.id) }
+            .map(\.title)
+            .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+    }
+
+    /// Validates and appends the draft hole request from the Insights screen.
+    /// Rejects an inverted player range or a blank category request; the
+    /// existing list is untouched on rejection.
+    @discardableResult
+    func addDraftHoleRequest() -> Bool {
+        guard draftMinPlayers <= draftMaxPlayers else {
+            holeValidationError = "Minimum players must be less than or equal to maximum players."
+            return false
+        }
+        let category: CategoryTag?
+        if draftUsesCategory {
+            let trimmed = draftCategoryTag.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else {
+                holeValidationError = "Pick or type a category tag for a category hole."
+                return false
+            }
+            category = CategoryTag(trimmed)
+        } else {
+            category = nil
+        }
+        holeRequests.append(
+            ShelfHole(
+                minPlayers: draftMinPlayers,
+                maxPlayers: draftMaxPlayers,
+                maxMinutes: draftMaxMinutes,
+                category: category
+            )
+        )
+        holeValidationError = nil
+        return true
+    }
+
+    func removeHoleRequest(at index: Int) {
+        guard holeRequests.indices.contains(index) else { return }
+        holeRequests.remove(at: index)
     }
 
     @discardableResult
@@ -246,6 +318,56 @@ final class GameCrateModel {
         }
     }
 
+    private func seedFixtureForInsightsFlow() {
+        guard games.isEmpty else { return }
+        do {
+            // Ana: rated plays building a small real distribution.
+            // Bo: one unrated play — a short-history unknown state.
+            let ana = Person(name: "Ana")
+            let bo = Person(name: "Bo")
+            let cardGame = Game(
+                title: "Jaipur",
+                minimumPlayers: 2,
+                maximumPlayers: 2,
+                playTimeMinutes: 30,
+                categories: ["Card"]
+            )
+            let partyGame = Game(
+                title: "Codenames",
+                minimumPlayers: 4,
+                maximumPlayers: 8,
+                playTimeMinutes: 15,
+                categories: ["Party"]
+            )
+            let unknownGame = Game(title: "Mystery Box", categories: ["Party"])
+            try gameRepository.save(cardGame)
+            try gameRepository.save(partyGame)
+            try gameRepository.save(unknownGame)
+            try personRepository.save(ana)
+            try personRepository.save(bo)
+            try playRepository.append(
+                PlayEvent(
+                    gameID: cardGame.id,
+                    occurredAt: .now,
+                    participants: [
+                        PlayParticipant(personID: ana.id, rating: Rating(rawValue: 5)),
+                        PlayParticipant(personID: bo.id, rating: nil),
+                    ]
+                )
+            )
+            try playRepository.append(
+                PlayEvent(
+                    gameID: partyGame.id,
+                    occurredAt: .now,
+                    participants: [PlayParticipant(personID: ana.id, rating: Rating(rawValue: 4))]
+                )
+            )
+            reload()
+        } catch {
+            errorMessage = "Fixture seed failed: \(error.localizedDescription)"
+        }
+    }
+
     private func seedFixtureForDeletionFlow() {
         guard games.isEmpty else { return }
         do {
@@ -279,6 +401,7 @@ enum GameCrateTab: Hashable {
     case tonight
     case wall
     case people
+    case insights
 }
 
 /// The single iPhone workspace layout seam. Today it deliberately renders a
@@ -333,6 +456,14 @@ struct BootstrapHomeView: View {
                             .accessibilityLabel("People")
                     }
                     .tag(GameCrateTab.people)
+
+                InsightsView(model: model)
+                    .tabItem {
+                        Label("Insights", systemImage: "chart.bar")
+                            .accessibilityIdentifier("tab.insights")
+                            .accessibilityLabel("Insights")
+                    }
+                    .tag(GameCrateTab.insights)
             }
         }
     }

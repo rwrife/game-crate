@@ -54,6 +54,9 @@ python3 -m unittest discover -s Scripts/tests -v 2>&1 | tee "$artifact_dir/helpe
 phase="zero_network_gate"
 bash scripts/check_zero_network.sh 2>&1 | tee "$artifact_dir/zero-network-gate.log"
 
+phase="ui_network_hygiene_gate"
+bash scripts/check_ui_network_hygiene.sh 2>&1 | tee "$artifact_dir/ui-network-hygiene-gate.log"
+
 phase="cratekit_purity_gate"
 bash scripts/check_cratekit_purity.sh 2>&1 | tee "$artifact_dir/cratekit-purity-gate.log"
 

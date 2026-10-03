@@ -32,6 +32,8 @@ jobs:
         run: bash scripts/check_cratekit_purity.sh
       - name: Zero-network gate
         run: bash scripts/check_zero_network.sh
+      - name: UI network/telemetry hygiene gate
+        run: bash scripts/check_ui_network_hygiene.sh
       - name: Gitignore keeps signing material out
         run: |
           set -e

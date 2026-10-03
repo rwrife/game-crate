@@ -214,6 +214,124 @@ final class GameCrateLaunchTests: XCTestCase {
         XCTAssertTrue(addPerson.waitForExistence(timeout: 5))
         XCTAssertTrue(addPerson.isHittable)
     }
+
+    // MARK: - Issue #6: insights (profiles + shelf holes)
+
+    /// Empty-store state: the Insights tab says there is nothing to count
+    /// instead of inventing numbers.
+    @MainActor
+    func testInsightsEmptyStatesSayNothingToCount() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing"]
+        app.launch()
+
+        app.tabBars.buttons["Insights"].tap()
+        XCTAssertTrue(element(app, identifier: "insights.profiles.empty").waitForExistence(timeout: 10))
+        XCTAssertTrue(element(app, identifier: "holes.empty").waitForExistence(timeout: 5))
+    }
+
+    /// A rated history renders as integer counts only: play count, rated
+    /// fraction, the 1–5 distribution, and per-category counts.
+    @MainActor
+    func testProfileShowsIntegerCountsForRatedHistory() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing", "-ui-testing-seed-insights"]
+        app.launch()
+
+        app.tabBars.buttons["Insights"].tap()
+        let anaRow = app.buttons["insights.person.Ana"]
+        XCTAssertTrue(anaRow.waitForExistence(timeout: 10))
+        XCTAssertTrue(anaRow.label.contains("2 plays"))
+        anaRow.tap()
+
+        XCTAssertTrue(element(app, identifier: "profile.plays.Ana").waitForExistence(timeout: 5))
+        XCTAssertTrue(staticText(app, containing: "2 plays logged").waitForExistence(timeout: 5))
+        XCTAssertTrue(scrollHunt(app, staticText(app, containing: "2 of 2 plays rated")))
+        XCTAssertTrue(scrollHunt(app, staticText(app, containing: "5 stars: 1")))
+        XCTAssertTrue(scrollHunt(app, staticText(app, containing: "4 stars: 1")))
+        XCTAssertTrue(scrollHunt(app, staticText(app, containing: "1 star: 0")))
+        XCTAssertTrue(scrollHunt(app, staticText(app, containing: "Card: 1")))
+        XCTAssertTrue(scrollHunt(app, staticText(app, containing: "Party: 1")))
+        // No ratings means no guessed wellness/personality framing anywhere.
+        XCTAssertFalse(app.staticTexts["Typical gamer personality"].exists)
+    }
+
+    /// Short-history state: a player with plays but zero ratings sees an
+    /// explicit "nothing recorded, distribution stays zero" state rather
+    /// than interpolated values.
+    @MainActor
+    func testShortHistoryProfileRendersUnknownRatings() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing", "-ui-testing-seed-insights"]
+        app.launch()
+
+        app.tabBars.buttons["Insights"].tap()
+        let boRow = app.buttons["insights.person.Bo"]
+        XCTAssertTrue(boRow.waitForExistence(timeout: 10))
+        XCTAssertTrue(boRow.label.contains("1 play"))
+        boRow.tap()
+
+        XCTAssertTrue(element(app, identifier: "profile.plays.Bo").waitForExistence(timeout: 5))
+        XCTAssertTrue(staticText(app, containing: "1 play logged").waitForExistence(timeout: 5))
+        XCTAssertTrue(element(app, identifier: "profile.no-ratings-short.Bo").waitForExistence(timeout: 5))
+        XCTAssertTrue(staticText(app, containing: "0 of 1 plays rated").waitForExistence(timeout: 5))
+        XCTAssertTrue(staticText(app, containing: "5 stars: 0").waitForExistence(timeout: 5))
+    }
+
+    /// Shelf-hole flow: an unmatched category request validates and is
+    /// rejected without touching the list; accepted requests explain each
+    /// line with proven matches or the explicit "never counted" unknowns;
+    /// rows are removable.
+    @MainActor
+    func testShelfHoleListIsExplainedAndRemovable() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing", "-ui-testing-seed-insights"]
+        app.launch()
+
+        app.tabBars.buttons["Insights"].tap()
+        XCTAssertTrue(element(app, identifier: "holes.empty").waitForExistence(timeout: 10))
+
+        // Accept the default draft (2 players within 30 min, no category).
+        revealTap(app, button: app.buttons["hole.add"])
+        XCTAssertTrue(scrollHunt(app, element(app, identifier: "holes.row.0")))
+        XCTAssertTrue(scrollHunt(app, staticText(app, containing: "1 proven match: Jaipur")))
+        XCTAssertTrue(staticText(app, containing: "1 game with unspecified fields never counted").exists)
+
+        // Category requested with no tag: validation error, list unchanged.
+        enableSwitch(app, identifier: "hole.category")
+        revealTap(app, button: app.buttons["hole.add"])
+        XCTAssertTrue(scrollHunt(app, element(app, identifier: "hole.error")))
+        XCTAssertTrue(staticText(app, containing: "Pick or type a category tag").exists)
+        // List untouched: a second row never materialized.
+        XCTAssertFalse(element(app, identifier: "holes.row.1").exists)
+
+        // Type a tag directly (the same proven interaction the game editor
+        // uses): the chip buttons live inside a horizontal ScrollView row,
+        // which bridges unreliably into the XCUITest hierarchy inside a
+        // virtualized List (observed on CI as "No matches found" for
+        // hole.tag.Party while every sibling control resolved). Add a true
+        // hole explained by zero proven coverage.
+        let categoryField = app.textFields["hole.categoryTag"]
+        XCTAssertTrue(scrollHunt(app, categoryField), "category field never became hittable")
+        categoryField.tap()
+        // Trailing newline commits the text and dismisses the keyboard so it
+        // cannot absorb the Add tap below the field.
+        categoryField.typeText("Party\n")
+        revealTap(app, button: app.buttons["hole.add"])
+        let secondRow = element(app, identifier: "holes.row.1")
+        XCTAssertTrue(scrollHunt(app, secondRow))
+        XCTAssertTrue(secondRow.label.contains("Party"))
+        XCTAssertTrue(scrollHunt(app, staticText(app, containing: "no shelf game provably covers this")))
+
+        // Remove the Party row. The original row re-explains itself (row
+        // index shifts to 0) and the hole explanation disappears completely.
+        revealTap(app, button: app.buttons["holes.remove.1"])
+        XCTAssertFalse(staticText(app, containing: "no shelf game provably covers this").waitForExistence(timeout: 2))
+        let survivor = element(app, identifier: "holes.row.0")
+        XCTAssertTrue(survivor.waitForExistence(timeout: 5))
+        XCTAssertTrue(survivor.label.contains("2 players"))
+        XCTAssertTrue(scrollHunt(app, staticText(app, containing: "1 proven match: Jaipur")))
+    }
 }
 
 /// Exact-identifier lookup that does not depend on the surfaced
@@ -223,6 +341,72 @@ private func element(_ app: XCUIApplication, identifier: String) -> XCUIElement 
     app.descendants(matching: .any)
         .matching(NSPredicate(format: "identifier == %@", identifier))
         .firstMatch
+}
+
+/// Scroll-hunt for a target inside a SwiftUI List. A List virtualizes rows
+/// outside the rendered window, so `waitForExistence` can never realize an
+/// off-screen row and `tap` needs a hittable element. Probe existence via
+/// `exists` (never throws on absence) BEFORE querying `isHittable`. After
+/// a candidate is visible, require it to STILL be visible after a settle
+/// delay: momentum scrolling plus row insertions/removals re-virtualize the
+/// List and can evict the target between check and tap (observed on CI as
+/// "Failed to get matching snapshot" right after a swipe revealed the chip
+/// row). Strategy: current viewport, then progressive DOWN swipes, then
+/// rewind UP. Success means visible AND hittable AND stable.
+@discardableResult
+private func scrollHunt(_ app: XCUIApplication, _ target: XCUIElement, maxScrolls: Int = 8) -> Bool {
+    func settled() -> Bool {
+        guard target.exists, target.isHittable else { return false }
+        usleep(400_000)
+        return target.exists && target.isHittable
+    }
+    if settled() { return true }
+    for _ in 0 ..< maxScrolls {
+        app.swipeUp() // moves the List toward later rows
+        if settled() { return true }
+    }
+    for _ in 0 ..< maxScrolls {
+        app.swipeDown() // rewind toward earlier rows
+        if settled() { return true }
+    }
+    return false
+}
+
+/// Reveal-then-tap for controls that can sit off-screen in a virtualized
+/// List after rows are inserted or removed. Scrolls to a settled hittable
+/// state BEFORE any tap, because an unrealized row exists only after being
+/// scrolled into the rendered window.
+private func revealTap(_ app: XCUIApplication, button: XCUIElement) {
+    XCTAssertTrue(scrollHunt(app, button), "button never became hittable: \(button.identifier)")
+    button.tap()
+}
+
+private func staticText(_ app: XCUIApplication, containing fragment: String) -> XCUIElement {
+    app.staticTexts
+        .matching(NSPredicate(format: "label CONTAINS %@", fragment))
+        .firstMatch
+}
+
+/// Toggle in a List row can surface as one merged element whose label
+/// region absorbs a raw tap; scroll it into a hittable position, drive the
+/// nested switch when present, and prove the flip by revealing the
+/// dependent control.
+private func enableSwitch(_ app: XCUIApplication, identifier: String) {
+    let toggle = app.switches[identifier].firstMatch
+    let dependent = element(app, identifier: "hole.categoryTag")
+    if dependent.isHittable { return }
+    XCTAssertTrue(scrollHunt(app, toggle), "switch never became hittable: \(identifier)")
+    let nested = toggle.switches.firstMatch
+    if nested.isHittable {
+        nested.tap()
+    } else {
+        toggle.tap()
+    }
+    if !scrollHunt(app, dependent) {
+        XCTAssertTrue(scrollHunt(app, toggle))
+        toggle.tap()
+        XCTAssertTrue(scrollHunt(app, dependent))
+    }
 }
 
 private extension XCUIElement {
