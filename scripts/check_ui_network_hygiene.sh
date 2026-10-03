@@ -110,7 +110,10 @@ fi
 # Import allowlist: modules the UI target may link, beyond the SDK-safe set.
 # Foundation is scanned above for socket-style APIs; the two local packages
 # are gated by the zero-network and CrateKit purity gates.
-IMPORT_ALLOWED=(SwiftUI Observation Foundation CrateKit CrateStore XCTest)
+# UniformTypeIdentifiers (issue #7) only declares document UTTypes for the
+# Files-app pickers — it exposes no transport APIs, and any raw socket use
+# would still be caught by the pattern scan above.
+IMPORT_ALLOWED=(SwiftUI Observation Foundation CrateKit CrateStore XCTest UniformTypeIdentifiers)
 
 bad_imports=""
 # Match `import` at line start including attribute prefixes (@preconcurrency,

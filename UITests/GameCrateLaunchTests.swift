@@ -332,6 +332,42 @@ final class GameCrateLaunchTests: XCTestCase {
         XCTAssertTrue(survivor.label.contains("2 players"))
         XCTAssertTrue(scrollHunt(app, staticText(app, containing: "1 proven match: Jaipur")))
     }
+
+    // MARK: - Issue #7: backup restore preview
+
+    /// Restore is preview-first (issue #7 acceptance): choosing a valid
+    /// backup shows an integer counts diff, and Cancel keeps the store
+    /// byte-for-byte untouched (empty store stays empty). The destructive
+    /// Replace path is only reachable from a preview; cancellation safety
+    /// on invalid files is covered by the CrateStore test suite.
+    @MainActor
+    func testRestorePreviewShowsCountsAndCancelKeepsStore() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing", "-ui-testing-restore-preview"]
+        app.launch()
+
+        app.tabBars.buttons["Insights"].tap()
+        let openButton = element(app, identifier: "privacy.open")
+        XCTAssertTrue(openButton.waitForExistence(timeout: 10))
+        XCTAssertTrue(openButton.isHittable)
+        openButton.tap()
+
+        // The fixture pushed a real codec round-trip through the same
+        // startRestorePreview path file import uses. Identified via the
+        // title (container-level identifiers clobber child identifiers).
+        let previewTitle = element(app, identifier: "restore.preview.title")
+        XCTAssertTrue(previewTitle.waitForExistence(timeout: 5))
+        let summary = staticText(app, containing: "Backup contains 2 games, 2 people, and 2 plays")
+        XCTAssertTrue(scrollHunt(app, summary), "restore summary counts never surfaced")
+
+        // Cancel leaves everything as it was: preview gone, shelf still
+        // empty (the fixture never wrote to the store).
+        revealTap(app, button: app.buttons["restore.cancel"])
+        XCTAssertFalse(element(app, identifier: "restore.preview.title").waitForExistence(timeout: 2))
+
+        app.tabBars.buttons["Shelf"].tap()
+        XCTAssertTrue(element(app, identifier: "shelf.empty").waitForExistence(timeout: 5))
+    }
 }
 
 /// Exact-identifier lookup that does not depend on the surfaced

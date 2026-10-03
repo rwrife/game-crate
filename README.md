@@ -99,8 +99,23 @@ evidence exists yet.** Remaining backlog:
 3. ~~Shelf + people management UI~~ ✅ (issue #4)
 4. ~~Play logging, crate wall, tonight's shortlist UI (incl. `CrateWorkspaceLayout` seam)~~ ✅ (issue #5)
 5. ~~Player profiles + shelf analytics at the UI edge~~ ✅ (issue #6)
-6. Backup/restore/CSV export + privacy controls
+6. ~~Backup/restore/CSV export + privacy controls~~ ✅ (issue #7)
 7. TestFlight/release packaging with real evidence gates
+
+Backup/portability landed (issue #7, milestone M6): `BackupCodec` (CrateKit)
+writes a versioned JSON envelope — schema version, app version, timestamp,
+and a SHA-256 integrity digest over the canonical payload — and fails
+closed on newer-schema files, tampered payloads, and garbage. The store
+layer snapshots and replaces the whole crate in one transaction (rejected
+files leave it byte-for-byte untouched; the frozen v1 schema and its
+append-only triggers survive a restore unchanged). `PlayLogCSV` exports the
+effective play log with RFC 4180 escaping and unknown-safe dates. The
+Backup & export sheet reaches the Files app through `fileExporter` /
+`fileImporter` only, and restore is preview-first: integer counts on both
+sides before the user replaces. Linux: CrateKit 42/42, CrateStore 15/15;
+zero-network, purity, and UI hygiene gates all PASS (empty pattern
+allowlist; import allowlist gained only `UniformTypeIdentifiers`). See
+`docs/backup-export-evidence.md`.
 
 Insights UI landed (issue #6, milestone M5): the Insights tab renders
 count-only per-player profiles (plays logged, rated fraction, 1–5 rating

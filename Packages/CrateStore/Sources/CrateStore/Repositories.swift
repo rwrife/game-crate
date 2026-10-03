@@ -62,7 +62,20 @@ public struct GRDBGameRepository: GameRepository {
     }
 
     public func allGames() throws -> [Game] {
-        try db.read { db in try Row.fetchAll(db, sql: "SELECT * FROM games ORDER BY title COLLATE NOCASE, id").map(Self.decode) }
+        try db.read { db in try Self.allGames(in: db) }
+    }
+
+    static func allGames(in db: Database) throws -> [Game] {
+        try Row.fetchAll(db, sql: "SELECT * FROM games ORDER BY title COLLATE NOCASE, id").map(Self.decode)
+    }
+
+    static func insert(_ game: Game, in db: Database) throws {
+        let categories = String(decoding: try JSONEncoder().encode(game.categories), as: UTF8.self)
+        try db.execute(sql: """
+            INSERT INTO games (id,title,minimum_players,maximum_players,play_time_minutes,categories_json,created_at,notes)
+            VALUES (?,?,?,?,?,?,?,?)
+            """, arguments: [game.id.uuidString, game.title, game.minimumPlayers, game.maximumPlayers,
+                             game.playTimeMinutes, categories, timestamp(game.createdAt), game.notes])
     }
 
     public func deleteGame(id: UUID) throws {
@@ -99,7 +112,16 @@ public struct GRDBPersonRepository: PersonRepository {
     }
 
     public func allPeople() throws -> [Person] {
-        try db.read { db in try Row.fetchAll(db, sql: "SELECT * FROM people ORDER BY name COLLATE NOCASE, id").map(Self.decode) }
+        try db.read { db in try Self.allPeople(in: db) }
+    }
+
+    static func allPeople(in db: Database) throws -> [Person] {
+        try Row.fetchAll(db, sql: "SELECT * FROM people ORDER BY name COLLATE NOCASE, id").map(Self.decode)
+    }
+
+    static func insert(_ person: Person, in db: Database) throws {
+        try db.execute(sql: "INSERT INTO people (id,name,created_at,notes) VALUES (?,?,?,?)",
+                       arguments: [person.id.uuidString, person.name, timestamp(person.createdAt), person.notes])
     }
 
     public func deletePerson(id: UUID) throws {
@@ -141,7 +163,34 @@ public struct GRDBPlayLedgerRepository: PlayLedgerRepository {
     }
 
     public func events(for gameID: UUID) throws -> [PlayEvent] {
-        try db.read { db in try Self.readEvents(db, gameID: gameID) }
+        try db.read { db in try Self.events(for: gameID, in: db) }
+    }
+
+    static func events(for gameID: UUID, in db: Database) throws -> [PlayEvent] {
+        try readEvents(db, gameID: gameID)
+    }
+
+    /// Every ledger row in a stable global order: games by title, events by
+    /// insertion (rowid). Used by backup snapshots (issue #7).
+    static func allEvents(in db: Database) throws -> [PlayEvent] {
+        var events: [PlayEvent] = []
+        for game in try GRDBGameRepository.allGames(in: db) {
+            events.append(contentsOf: try readEvents(db, gameID: game.id))
+        }
+        return events
+    }
+
+    /// Complete-row insert for restore (issue #7): unlike `append`, this
+    /// writes `correction_of` directly — the v1 trigger forbids in-place
+    /// updates of plays, and restore pre-validates that every correction
+    /// references an event earlier in the sequence.
+    static func insert(_ event: PlayEvent, in db: Database) throws {
+        try db.execute(sql: "INSERT INTO plays (id,game_id,occurred_at,notes,correction_of) VALUES (?,?,?,?,?)",
+                       arguments: [event.id.uuidString, event.gameID.uuidString, timestamp(event.occurredAt), event.notes, event.correctionOf?.uuidString])
+        for participant in event.participants {
+            try db.execute(sql: "INSERT INTO play_players (play_id,person_id,rating,notes) VALUES (?,?,?,?)",
+                           arguments: [event.id.uuidString, participant.personID.uuidString, participant.rating?.rawValue, participant.notes])
+        }
     }
 
     private static func readEvents(_ db: Database, gameID: UUID) throws -> [PlayEvent] {
