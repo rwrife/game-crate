@@ -305,8 +305,18 @@ final class GameCrateLaunchTests: XCTestCase {
         // List untouched: a second row never materialized.
         XCTAssertFalse(element(app, identifier: "holes.row.1").exists)
 
-        // Pick a tag and add: a true hole explained by zero proven coverage.
-        revealTap(app, button: app.buttons["hole.tag.Party"])
+        // Type a tag directly (the same proven interaction the game editor
+        // uses): the chip buttons live inside a horizontal ScrollView row,
+        // which bridges unreliably into the XCUITest hierarchy inside a
+        // virtualized List (observed on CI as "No matches found" for
+        // hole.tag.Party while every sibling control resolved). Add a true
+        // hole explained by zero proven coverage.
+        let categoryField = app.textFields["hole.categoryTag"]
+        XCTAssertTrue(scrollHunt(app, categoryField), "category field never became hittable")
+        categoryField.tap()
+        // Trailing newline commits the text and dismisses the keyboard so it
+        // cannot absorb the Add tap below the field.
+        categoryField.typeText("Party\n")
         revealTap(app, button: app.buttons["hole.add"])
         let secondRow = element(app, identifier: "holes.row.1")
         XCTAssertTrue(scrollHunt(app, secondRow))
@@ -335,28 +345,36 @@ private func element(_ app: XCUIApplication, identifier: String) -> XCUIElement 
 
 /// Scroll-hunt for a target inside a SwiftUI List. A List virtualizes rows
 /// outside the rendered window, so `waitForExistence` can never realize an
-/// off-screen row and `tap` needs a hittable element. Strategy: first check
-/// the current viewport, then swipe DOWN progressively (never alternating
-/// back, which would cancel progress toward deeper rows), then rewind UP in
-/// case the target sat above the starting viewport. Success means HITTABLE
-/// only — a row that exists but cannot be tapped is a failure, not a pass.
+/// off-screen row and `tap` needs a hittable element. Probe existence via
+/// `exists` (never throws on absence) BEFORE querying `isHittable`. After
+/// a candidate is visible, require it to STILL be visible after a settle
+/// delay: momentum scrolling plus row insertions/removals re-virtualize the
+/// List and can evict the target between check and tap (observed on CI as
+/// "Failed to get matching snapshot" right after a swipe revealed the chip
+/// row). Strategy: current viewport, then progressive DOWN swipes, then
+/// rewind UP. Success means visible AND hittable AND stable.
 @discardableResult
-private func scrollHunt(_ app: XCUIApplication, _ target: XCUIElement, maxScrolls: Int = 6) -> Bool {
-    if target.isHittable { return true }
+private func scrollHunt(_ app: XCUIApplication, _ target: XCUIElement, maxScrolls: Int = 8) -> Bool {
+    func settled() -> Bool {
+        guard target.exists, target.isHittable else { return false }
+        usleep(400_000)
+        return target.exists && target.isHittable
+    }
+    if settled() { return true }
     for _ in 0 ..< maxScrolls {
         app.swipeUp() // moves the List toward later rows
-        if target.isHittable { return true }
+        if settled() { return true }
     }
     for _ in 0 ..< maxScrolls {
         app.swipeDown() // rewind toward earlier rows
-        if target.isHittable { return true }
+        if settled() { return true }
     }
     return false
 }
 
 /// Reveal-then-tap for controls that can sit off-screen in a virtualized
-/// List after rows are inserted or removed. Scrolls to hittable BEFORE any
-/// existence assertion, because an unrealized row exists only after being
+/// List after rows are inserted or removed. Scrolls to a settled hittable
+/// state BEFORE any tap, because an unrealized row exists only after being
 /// scrolled into the rendered window.
 private func revealTap(_ app: XCUIApplication, button: XCUIElement) {
     XCTAssertTrue(scrollHunt(app, button), "button never became hittable: \(button.identifier)")
