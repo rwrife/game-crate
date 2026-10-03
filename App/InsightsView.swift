@@ -56,6 +56,17 @@ struct InsightsView: View {
                 }
             }
             .navigationTitle("Insights")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        PrivacySettingsSheet(model: model)
+                    } label: {
+                        Label("Backup & export", systemImage: "arrow.down.doc")
+                    }
+                    .accessibilityIdentifier("privacy.open")
+                    .accessibilityLabel("Backup and export")
+                }
+            }
         }
     }
 }

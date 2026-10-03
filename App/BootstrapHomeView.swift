@@ -58,6 +58,9 @@ final class GameCrateModel {
             if args.contains("-ui-testing-seed-insights") {
                 model.seedFixtureForInsightsFlow()
             }
+            if args.contains("-ui-testing-restore-preview") {
+                model.seedFixtureForRestorePreviewFlow()
+            }
             return model
         }
 
@@ -206,6 +209,92 @@ final class GameCrateModel {
     func removeHoleRequest(at index: Int) {
         guard holeRequests.indices.contains(index) else { return }
         holeRequests.remove(at: index)
+    }
+
+    // MARK: - Backup, restore, CSV export (issue #7)
+
+    /// A decoded backup awaiting user decision. The store is NOT touched
+    /// until `confirmRestore` succeeds; any preview/cancel path leaves it
+    /// byte-for-byte unchanged.
+    struct RestorePreview: Identifiable {
+        let id = UUID()
+        let snapshot: BackupCodec.Snapshot
+        /// Snapshot of the current counts when the preview was built, so
+        /// the diff shown cannot race against concurrent edits.
+        let currentGameCount: Int
+        let currentPersonCount: Int
+        let currentPlayCount: Int
+    }
+
+    var pendingRestore: RestorePreview?
+    var restoreErrorMessage: String?
+
+    /// Serializes the complete current crate into a versioned backup file.
+    func backupFileData() -> Data? {
+        do {
+            return try BackupCodec.encode(snapshot: try store.snapshot(), appVersion: appVersionString)
+        } catch {
+            errorMessage = "Backup could not be created: \(error.localizedDescription)"
+            return nil
+        }
+    }
+
+    /// CSV export of the EFFECTIVE play log — superseded originals never
+    /// appear; the append-only history is untouched.
+    func csvExportData() -> Data? {
+        do {
+            let snapshot = try store.snapshot()
+            let ledger = PlayLedger(events: snapshot.playEvents)
+            let csv = PlayLogCSV.export(
+                games: snapshot.games,
+                people: snapshot.people,
+                events: ledger.effectiveEvents
+            )
+            return Data(csv.utf8)
+        } catch {
+            errorMessage = "CSV export could not be created: \(error.localizedDescription)"
+            return nil
+        }
+    }
+
+    /// Decodes + fully validates a chosen backup file and queues the
+    /// preview. Any codec rejection (version, digest, garbage) surfaces as
+    /// an error and leaves BOTH the store and any previous preview alone.
+    func startRestorePreview(from data: Data) {
+        restoreErrorMessage = nil
+        do {
+            let snapshot = try BackupCodec.decode(data)
+            pendingRestore = RestorePreview(
+                snapshot: snapshot,
+                currentGameCount: games.count,
+                currentPersonCount: people.count,
+                currentPlayCount: ledger.effectiveEvents.count
+            )
+        } catch {
+            restoreErrorMessage = "This backup file cannot be restored: \(error.localizedDescription)"
+        }
+    }
+
+    @discardableResult
+    func confirmRestore() -> Bool {
+        guard let preview = pendingRestore else { return false }
+        do {
+            try store.restore(preview.snapshot)
+            pendingRestore = nil
+            reload()
+            return true
+        } catch {
+            restoreErrorMessage = "Restore failed — the current data is untouched: \(error.localizedDescription)"
+            return false
+        }
+    }
+
+    func cancelRestore() {
+        pendingRestore = nil
+    }
+
+    var appVersionString: String {
+        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "0.0.0"
     }
 
     @discardableResult
@@ -363,6 +452,46 @@ final class GameCrateModel {
                 )
             )
             reload()
+        } catch {
+            errorMessage = "Fixture seed failed: \(error.localizedDescription)"
+        }
+    }
+
+    /// UI-test seam for the restore-preview journey (issue #7): builds a
+    /// two-game/two-person/two-play backup entirely in memory, runs it
+    /// through the real codec, and queues the preview exactly as file
+    /// import would. The store itself is left EMPTY, so the journey can
+    /// assert the preview diff against zero and that cancel keeps it empty.
+    private func seedFixtureForRestorePreviewFlow() {
+        do {
+            let ana = Person(id: UUID(uuidString: "00000000-0000-0000-0000-0000000000a1")!, name: "Aardvark")
+            let bo = Person(id: UUID(uuidString: "00000000-0000-0000-0000-0000000000b2")!, name: "Beetle")
+            let alpha = Game(
+                id: UUID(uuidString: "00000000-0000-0000-0000-0000000000c3")!,
+                title: "Alpha Backup",
+                minimumPlayers: 2,
+                maximumPlayers: 4,
+                playTimeMinutes: 45
+            )
+            let beta = Game(
+                id: UUID(uuidString: "00000000-0000-0000-0000-0000000000d4")!,
+                title: "Beta Backup",
+                minimumPlayers: 1,
+                maximumPlayers: 2,
+                playTimeMinutes: 30
+            )
+            let file = try BackupCodec.encode(
+                snapshot: BackupCodec.Snapshot(
+                    games: [alpha, beta],
+                    people: [ana, bo],
+                    playEvents: [
+                        PlayEvent(gameID: alpha.id, occurredAt: .now, participants: [PlayParticipant(personID: ana.id, rating: Rating(rawValue: 5))]),
+                        PlayEvent(gameID: beta.id, occurredAt: .now, participants: [PlayParticipant(personID: bo.id)]),
+                    ]
+                ),
+                appVersion: "ui-test"
+            )
+            startRestorePreview(from: file)
         } catch {
             errorMessage = "Fixture seed failed: \(error.localizedDescription)"
         }

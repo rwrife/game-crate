@@ -12,6 +12,7 @@
 		A10000000000000000000104 /* CrateKit in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000801 /* CrateKit */; };
 		A10000000000000000000105 /* CrateStore in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000803 /* CrateStore */; };
 		A10000000000000000000106 /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000206 /* InsightsView.swift */; };
+		A10000000000000000000107 /* PrivacySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000207 /* PrivacySettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -31,6 +32,7 @@
 		A10000000000000000000204 /* GameCrate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GameCrate.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000205 /* GameCrateUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GameCrateUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000206 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
+		A10000000000000000000207 /* PrivacySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacySettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -64,6 +66,7 @@
 				A10000000000000000000201 /* GameCrateApp.swift */,
 				A10000000000000000000202 /* BootstrapHomeView.swift */,
 				A10000000000000000000206 /* InsightsView.swift */,
+				A10000000000000000000207 /* PrivacySettingsView.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -163,6 +166,7 @@
 				A10000000000000000000101 /* GameCrateApp.swift in Sources */,
 				A10000000000000000000102 /* BootstrapHomeView.swift in Sources */,
 				A10000000000000000000106 /* InsightsView.swift in Sources */,
+				A10000000000000000000107 /* PrivacySettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
