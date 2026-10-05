@@ -13,6 +13,8 @@
 		A10000000000000000000105 /* CrateStore in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000803 /* CrateStore */; };
 		A10000000000000000000106 /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000206 /* InsightsView.swift */; };
 		A10000000000000000000107 /* PrivacySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000207 /* PrivacySettingsView.swift */; };
+		A10000000000000000000108 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000208 /* Assets.xcassets */; };
+		A10000000000000000000109 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000209 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -33,6 +35,8 @@
 		A10000000000000000000205 /* GameCrateUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GameCrateUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000206 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
 		A10000000000000000000207 /* PrivacySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacySettingsView.swift; sourceTree = "<group>"; };
+		A10000000000000000000208 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A10000000000000000000209 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -67,6 +71,8 @@
 				A10000000000000000000202 /* BootstrapHomeView.swift */,
 				A10000000000000000000206 /* InsightsView.swift */,
 				A10000000000000000000207 /* PrivacySettingsView.swift */,
+				A10000000000000000000208 /* Assets.xcassets */,
+				A10000000000000000000209 /* PrivacyInfo.xcprivacy */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -154,7 +160,7 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		A10000000000000000000703 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;};
+		A10000000000000000000703 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000108 /* Assets.xcassets in Resources */, A10000000000000000000109 /* PrivacyInfo.xcprivacy in Resources */,); runOnlyForDeploymentPostprocessing = 0;};
 		A10000000000000000000704 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;};
 /* End PBXResourcesBuildPhase section */
 
@@ -188,6 +194,7 @@
 		A10000000000000000000903 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGNING_REQUIRED = NO;
 				CURRENT_PROJECT_VERSION = 1;
@@ -208,6 +215,7 @@
 		A10000000000000000000904 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGNING_REQUIRED = NO;
 				CURRENT_PROJECT_VERSION = 1;

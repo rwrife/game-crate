@@ -1,0 +1,36 @@
+name: Tagged TestFlight release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+
+permissions:
+  contents: read
+
+jobs:
+  testflight:
+    runs-on: macos-26
+    timeout-minutes: 90
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      ASC_TEAM_ID: ${{ secrets.ASC_TEAM_ID }}
+    steps:
+      - name: Checkout tagged commit and main ancestry
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Archive, verify iPhone identity, upload, and poll processing
+        timeout-minutes: 80
+        run: bash Scripts/release.sh
+      - name: Upload release evidence (no keys or signed app binaries)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: testflight-evidence-${{ github.run_id }}
+          path: ${{ runner.temp }}/gamecrate-release-evidence/
+          if-no-files-found: warn
+          retention-days: 30
