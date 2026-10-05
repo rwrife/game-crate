@@ -68,7 +68,9 @@ xcodebuild archive \
   CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=YES \
   "MARKETING_VERSION=$version" "CURRENT_PROJECT_VERSION=$build_number" \
   > "$RUNNER_TEMP/gamecrate-archive.log" 2>&1 || {
-    echo 'Archive failed; signing logs retained only on ephemeral runner (not uploaded)' >&2; exit 1;
+    python3 Scripts/safe_release_error.py "$RUNNER_TEMP/gamecrate-archive.log" \
+      --output "$artifact_dir/archive-error-categories.txt"
+    echo 'Archive failed; raw signing log remains on ephemeral runner' >&2; exit 1;
   }
 
 app="$archive/Products/Applications/GameCrate.app"
@@ -97,7 +99,9 @@ xcodebuild -exportArchive -archivePath "$archive" -exportPath "$export_dir" \
   -allowProvisioningUpdates -authenticationKeyPath "$key_path" \
   -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
   > "$RUNNER_TEMP/gamecrate-export.log" 2>&1 || {
-    echo 'Upload/export failed; signing logs retained only on ephemeral runner (not uploaded)' >&2; exit 1;
+    python3 Scripts/safe_release_error.py "$RUNNER_TEMP/gamecrate-export.log" \
+      --output "$artifact_dir/export-error-categories.txt"
+    echo 'Upload/export failed; raw signing log remains on ephemeral runner' >&2; exit 1;
   }
 python3 Scripts/asc_build_evidence.py \
   --key-path "$key_path" --key-id "$ASC_KEY_ID" --issuer-id "$ASC_ISSUER_ID" \
