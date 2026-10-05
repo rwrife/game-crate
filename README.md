@@ -100,7 +100,7 @@ evidence exists yet.** Remaining backlog:
 4. ~~Play logging, crate wall, tonight's shortlist UI (incl. `CrateWorkspaceLayout` seam)~~ ✅ (issue #5)
 5. ~~Player profiles + shelf analytics at the UI edge~~ ✅ (issue #6)
 6. ~~Backup/restore/CSV export + privacy controls~~ ✅ (issue #7)
-7. TestFlight/release packaging with real evidence gates
+7. Tagged TestFlight/release packaging (issue #8; processed-build evidence required)
 
 Backup/portability landed (issue #7, milestone M6): `BackupCodec` (CrateKit)
 writes a versioned JSON envelope — schema version, app version, timestamp,
@@ -146,3 +146,4 @@ for host results and platform limitations.
 - Toolchain pinned in `toolchain.json`: iOS 26 SDK or newer, Xcode 26.0.1 (17A400) baseline, Swift 6 language mode. A missing exact pin on CI is an environment acceptance blocker.
 - CI asserts `TARGETED_DEVICE_FAMILY = 1` in all app-target configurations and verifies built `UIDeviceFamily == [1]` on Apple runners. Archive verification never happens on Linux and is never faked there.
 - Release path: TestFlight via App Store Connect API using the repository Actions secrets above (secret names only).
+- Release candidate checklist, privacy/metadata draft, tag instructions and evidence conditions: `docs/release-checklist.md`. A workflow definition alone is not a successful signed archive or processed TestFlight build.
