@@ -1,4 +1,4 @@
-# Game Crate — release checklist (v0.1.2 candidate)
+# Game Crate — release checklist (v0.1.3 candidate)
 
 ## App Store Connect metadata (draft, not evidence of submission)
 
@@ -30,6 +30,7 @@
 
 ## Observed release attempts
 
+- `v0.1.2`, build `3.1`, [run 37446107837](https://github.com/rwrife/game-crate/actions/runs/37446107837): exact Xcode 26.0.1 / 17A400 / SDK 26.0 was selected on `macos-26`, but archive failed with categories `missing-ios-platform=1, missing-destination=1, provisioning=1`. No archived identity/signature, upload or processed build was verified. Redacted record is `docs/release-evidence/v0.1.2-attempt-1.json`.
 - `v0.1.1`, build `2.1`, [run 37439079735](https://github.com/rwrife/game-crate/actions/runs/37439079735): exact Xcode 26.0.1 / 17A400 / SDK 26.0 was selected, but archive failed. The retained diagnostic is `provisioning=1, compiler-or-build=2`. This is not sufficient to establish a specific root cause. No archived identity/signature, upload or processed build was verified. The redacted record is `docs/release-evidence/v0.1.1-attempt-1.json`.
 - The registered bundle ID and matching ASC app record both exist (read-only/idempotent lookup performed by the executor); this is not proof of usable provisioning or signing.
 - On the next attempt, fixed subcategories distinguish missing platform/destination, missing profiles, disabled automatic signing, missing account, invalid credentials and certificate quota. Never infer quota exhaustion from the broad `provisioning` category, revoke certificates automatically, or substitute a toolchain to make the release pass.
