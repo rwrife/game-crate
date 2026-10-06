@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3 — release candidate
+
+- Try the tagged release on the same macos-15 runner as the passing pinned iOS simulator lane. This does not relax the exact Xcode 26.0.1 / 17A400 / iPhoneOS SDK 26.0 pin. The v0.1.2 macos-26 archive could not locate its iOS 26.0 platform/destination.
+- No signed archive, upload or processed build is claimed. The v0.1.3 tag must produce that evidence.
+
 ## 0.1.2 — release candidate
 
 - Keeps all 0.1.1 app features unchanged; sharpens the release-failure diagnostic with fixed, secret-safe signing/provisioning subcategories (certificate quota, missing profiles, automatic signing disabled, missing App Store Connect account, invalid credentials) and records the retained redacted evidence for the failed v0.1.1 attempt.

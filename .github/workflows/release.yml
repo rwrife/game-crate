@@ -10,7 +10,9 @@ permissions:
 
 jobs:
   testflight:
-    runs-on: macos-26
+    # macos-26 exposes the pinned SDK but its archive destination lacks iOS 26.0.
+    # Match the validated macos-15 lane; select_xcode.py still enforces the exact pin.
+    runs-on: macos-15
     timeout-minutes: 90
     env:
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}

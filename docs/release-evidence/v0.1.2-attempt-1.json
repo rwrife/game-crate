@@ -1,0 +1,20 @@
+{
+  "evidence_kind": "failed-release-attempt",
+  "commit": "0d88e8605cf8c5f7d38e9aefb6a29d144612ba39",
+  "tag": "v0.1.2",
+  "version": "0.1.2",
+  "build_number": "3.1",
+  "actions_run": "https://github.com/rwrife/game-crate/actions/runs/37446107837",
+  "artifact_url": "https://github.com/rwrife/game-crate/actions/runs/37446107837/artifacts/11402899890",
+  "xcode_version": "26.0.1",
+  "xcode_build": "17A400",
+  "iphoneos_sdk": "26.0",
+  "conclusion": "failure",
+  "failed_phase": "archive",
+  "retained_diagnostic": "Xcode failure categories: missing-ios-platform=1, missing-destination=1, provisioning=1",
+  "root_cause": "archive reported missing iOS platform and destination on macos-26 despite selecting the exact Xcode and SDK; no raw excerpt retained, and signing readiness remains unverified",
+  "archive_identity_verified": false,
+  "signature_verified": false,
+  "upload_verified": false,
+  "processed_build_verified": false
+}
