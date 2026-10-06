@@ -31,5 +31,5 @@
 ## Failure and secret hygiene
 
 - Required secret **names only**: `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`, `ASC_TEAM_ID`. Values are never committed or printed. The p8 is written mode 600 under runner temp, deleted on exit. An absent secret fails before signing.
-- `testflight-evidence-<run>` contains only release context, selected Xcode/SDK, archived app Info.plist and processed-build JSON if available. Do not upload the archive, IPA, raw signing logs or key.
+- `testflight-evidence-<run>` contains only release context, selected Xcode/SDK, archived app Info.plist and processed-build JSON if available, plus fixed error categories/counts on failure (no raw Xcode lines or key fragments). Do not upload the archive, IPA, raw signing logs or key.
 - Pin absence, signing/provisioning errors, missing App Store Connect app, upload failure and processing timeout all leave the issue open. CI simulator success is not signing, archive, upload or device evidence.

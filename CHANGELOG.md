@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 — release candidate
+
+- Keeps all 0.1.0 app features unchanged; adds safe category-only archive/export error evidence for a new release attempt after the first tagged archive failed before signing evidence or upload.
+- No processed TestFlight build is asserted by this source entry. The v0.1.1 tagged run must supply that record.
+
 ## 0.1.0 — release candidate
 
 - Native iPhone shelf and people roster, offline play ledger and explainable game-night shortlist.
