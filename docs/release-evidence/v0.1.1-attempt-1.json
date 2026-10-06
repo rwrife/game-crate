@@ -1,0 +1,21 @@
+{
+  "evidence_kind": "failed-release-attempt",
+  "commit": "7b634d2b62e78f3d09084c920ddeb85fa48d4564",
+  "tag": "v0.1.1",
+  "version": "0.1.1",
+  "build_number": "2.1",
+  "actions_run": "https://github.com/rwrife/game-crate/actions/runs/37439079735",
+  "artifact_url": "https://github.com/rwrife/game-crate/actions/runs/37439079735/artifacts/11400312536",
+  "artifact_sha256": "2d3e21402d94a50e7528a8559ebee73c0efb28d80378f3426de8b1648736a7cd",
+  "xcode_version": "26.0.1",
+  "xcode_build": "17A400",
+  "iphoneos_sdk": "26.0",
+  "conclusion": "failure",
+  "failed_phase": "archive",
+  "retained_diagnostic": "Xcode failure categories: provisioning=1, compiler-or-build=2",
+  "root_cause": "not established by retained fixed-category diagnostic",
+  "archive_identity_verified": false,
+  "signature_verified": false,
+  "upload_verified": false,
+  "processed_build_verified": false
+}

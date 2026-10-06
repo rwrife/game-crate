@@ -6,6 +6,13 @@ from pathlib import Path
 import re
 
 CATEGORIES = (
+    ("missing-ios-platform", re.compile(r"iOS [0-9.]+ is not installed|Please download and install the platform", re.IGNORECASE)),
+    ("missing-destination", re.compile(r"Unable to find a destination matching", re.IGNORECASE)),
+    ("certificate-quota", re.compile(r"maximum number of certificates|Choose a certificate to revoke|reached.*maximum.*certificates", re.IGNORECASE)),
+    ("missing-profiles", re.compile(r"No profiles for .* were found|No matching provisioning profile|No profile matching", re.IGNORECASE)),
+    ("automatic-signing-disabled", re.compile(r"Automatic signing is disabled|requires a provisioning profile", re.IGNORECASE)),
+    ("missing-account", re.compile(r"No Accounts: Add a new account|No accounts with App Store Connect access", re.IGNORECASE)),
+    ("invalid-credentials", re.compile(r"credentials are missing or invalid|Unable to authenticate", re.IGNORECASE)),
     ("provisioning", re.compile(r"profil(e|ing)|provision", re.IGNORECASE)),
     ("signing-certificate", re.compile(r"certificate|codesign|signing identity", re.IGNORECASE)),
     ("appstore-auth", re.compile(r"authenticat|API key|credential|not authorized|account|permission|forbidden", re.IGNORECASE)),

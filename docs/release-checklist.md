@@ -1,4 +1,4 @@
-# Game Crate — release checklist (v0.1.0 candidate)
+# Game Crate — release checklist (v0.1.2 candidate)
 
 ## App Store Connect metadata (draft, not evidence of submission)
 
@@ -27,6 +27,12 @@
 3. Upload with Xcode's App Store Connect API-key export, then poll ASC for a **new** build numbered `<run number>.<run attempt>` (reruns must not reuse Apple's version/build identity) and an upload timestamp after this attempt started. Only `processing_state: VALID` in `processed-build.json` counts as processed-build evidence. An archive or export command alone does not.
 4. Link the successful Actions run, evidence artifact, build ID and the redacted JSON in the release PR; check the real app's TestFlight page before claiming installation or availability. Invalid or timed-out processing is a blocker, not a success.
 5. Public App Store shipping requires additional review: a real privacy-policy URL, ASC questionnaire submission, current iPhone screenshots, localization/metadata review, install smoke on a real iPhone, and approval. None of those are implied by this TestFlight workflow.
+
+## Observed release attempts
+
+- `v0.1.1`, build `2.1`, [run 37439079735](https://github.com/rwrife/game-crate/actions/runs/37439079735): exact Xcode 26.0.1 / 17A400 / SDK 26.0 was selected, but archive failed. The retained diagnostic is `provisioning=1, compiler-or-build=2`. This is not sufficient to establish a specific root cause. No archived identity/signature, upload or processed build was verified. The redacted record is `docs/release-evidence/v0.1.1-attempt-1.json`.
+- The registered bundle ID and matching ASC app record both exist (read-only/idempotent lookup performed by the executor); this is not proof of usable provisioning or signing.
+- On the next attempt, fixed subcategories distinguish missing platform/destination, missing profiles, disabled automatic signing, missing account, invalid credentials and certificate quota. Never infer quota exhaustion from the broad `provisioning` category, revoke certificates automatically, or substitute a toolchain to make the release pass.
 
 ## Failure and secret hygiene
 
