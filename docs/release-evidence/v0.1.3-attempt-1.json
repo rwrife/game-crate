@@ -1,0 +1,20 @@
+{
+  "evidence_kind": "failed-release-attempt",
+  "commit": "c925b996e4fadfb5f98f3c9d4fb2aabcf77d5e72",
+  "tag": "v0.1.3",
+  "version": "0.1.3",
+  "build_number": "4.1",
+  "actions_run": "https://github.com/rwrife/game-crate/actions/runs/37450946928",
+  "artifact_url": "https://github.com/rwrife/game-crate/actions/runs/37450946928/artifacts/11407087013",
+  "xcode_version": "26.0.1",
+  "xcode_build": "17A400",
+  "iphoneos_sdk": "26.0",
+  "conclusion": "failure",
+  "failed_phase": "archive",
+  "retained_diagnostic": "Xcode failure categories: certificate-quota=1, missing-profiles=1, provisioning=2, compiler-or-build=1",
+  "root_cause": "archive reported certificate quota and missing profiles on macos-15; this fixed-category diagnostic cannot prove whether other errors were present in the unretained raw log",
+  "archive_identity_verified": false,
+  "signature_verified": false,
+  "upload_verified": false,
+  "processed_build_verified": false
+}
